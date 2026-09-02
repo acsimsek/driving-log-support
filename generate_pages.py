@@ -12,11 +12,14 @@ Contract, agreed 2 September 2026:
   mailto (the site itself collects nothing; the email lands at the existing support address).
 """
 
+from __future__ import annotations
+
 import datetime
 import html
 import json
 import pathlib
 import sys
+import urllib.parse
 
 REPO = pathlib.Path(__file__).resolve().parent
 STATES_JSON = REPO.parent / "driving-log-ios" / "states.json"
@@ -33,6 +36,11 @@ PUBLIC_FIELDS = {
     "supervisor_min_age", "supervisor_min_license_years",
     "output", "signature", "night_definition", "supervisor_note", "signer_note",
     "permit_curfew", "extra_requirements", "required_fields", "source", "secondary_source",
+    "night_blackout_months", "digital_accepted",
+}
+
+CONDITIONAL_TARGET_FIELDS = {
+    "condition", "total", "total_minutes", "night", "night_minutes",
 }
 
 PILOT = ["CA", "TX", "FL", "NC", "WI", "MN", "NV"]
@@ -97,10 +105,16 @@ def fail(message: str) -> None:
     sys.exit(1)
 
 
-def load_states() -> tuple[dict, str]:
-    data = json.loads(STATES_JSON.read_text(encoding="utf-8"))
+def load_states(
+    states_json: pathlib.Path = STATES_JSON,
+    today: datetime.date | None = None,
+) -> tuple[dict, str]:
+    data = json.loads(states_json.read_text(encoding="utf-8"))
     verified_on = data["_meta"]["verified_on"]
-    age = (datetime.date.today() - datetime.date.fromisoformat(verified_on)).days
+    verified_date = datetime.date.fromisoformat(verified_on)
+    age = ((today or datetime.date.today()) - verified_date).days
+    if age < 0:
+        fail(f"states.json has a future verification date: {verified_on}.")
     if age > FRESHNESS_LIMIT_DAYS:
         fail(
             f"states.json was last verified {verified_on} ({age} days ago, limit "
@@ -109,7 +123,21 @@ def load_states() -> tuple[dict, str]:
     states = {}
     for state in data["states"]:
         if state["code"] in PILOT:
-            states[state["code"]] = {k: v for k, v in state.items() if k in PUBLIC_FIELDS}
+            if state.get("status") != "verified":
+                fail(f"{state['code']} is in the pilot but is not status=verified.")
+            published = {k: v for k, v in state.items() if k in PUBLIC_FIELDS}
+            conditional = state.get("conditional_target")
+            if conditional is not None:
+                if not isinstance(conditional, dict) or not conditional.get("condition"):
+                    fail(f"{state['code']} has an invalid conditional_target.")
+                published["conditional_target"] = {
+                    k: v for k, v in conditional.items() if k in CONDITIONAL_TARGET_FIELDS
+                }
+            for source_key in ("source", "secondary_source"):
+                source = published.get(source_key)
+                if source is not None and not source.startswith("https://"):
+                    fail(f"{state['code']} {source_key} must use HTTPS.")
+            states[state["code"]] = published
     missing = [c for c in PILOT if c not in states]
     if missing:
         fail(f"states.json is missing pilot states: {missing}")
@@ -125,10 +153,30 @@ def hours(state: dict, key: str) -> str:
     return f"{value} hours" if value is not None else "—"
 
 
+def target_hours(s: dict) -> str:
+    totals = {s.get("total")}
+    if s.get("conditional_target"):
+        totals.add(s["conditional_target"].get("total"))
+    values = sorted(value for value in totals if value is not None)
+    return " or ".join(str(value) for value in values) + " hours"
+
+
 def requirement_rows(s: dict) -> str:
     rows = [("Supervised practice required", hours(s, "total"))]
+    conditional = s.get("conditional_target")
+    if conditional and conditional.get("total") is not None:
+        condition = conditional["condition"]
+        condition = condition[:1].lower() + condition[1:]
+        rows.append(
+            (
+                f"If {condition}",
+                f"{conditional['total']} hours",
+            )
+        )
     if s.get("night"):
         rows.append(("Of which at night", hours(s, "night")))
+    if s.get("night_definition"):
+        rows.append(("Night means", s["night_definition"]))
     if s.get("permit_months"):
         rows.append(("Permit must be held", f"{s['permit_months']} months"))
     elif s.get("permit_days"):
@@ -139,11 +187,28 @@ def requirement_rows(s: dict) -> str:
         rows.append(("Daily hours that count", f"max {s['daily_cap']} h/day"))
     if s.get("weekly_cap"):
         rows.append(("Weekly hours that count", f"max {s['weekly_cap']} h/week"))
-    if s.get("supervisor_min_age"):
-        detail = f"{s['supervisor_min_age']}+"
+    if (
+        s.get("supervisor_min_age")
+        or s.get("supervisor_min_license_years")
+        or s.get("supervisor_note")
+    ):
+        details = []
+        if s.get("supervisor_min_age"):
+            details.append(f"age {s['supervisor_min_age']}+")
         if s.get("supervisor_min_license_years"):
-            detail += f", licensed {s['supervisor_min_license_years']}+ years"
-        rows.append(("Supervising adult", detail))
+            details.append(f"licensed {s['supervisor_min_license_years']}+ years")
+        if s.get("supervisor_note"):
+            details.append(s["supervisor_note"])
+        rows.append(("Supervising adult", "; ".join(details)))
+    if s.get("night_blackout_months"):
+        rows.append(
+            (
+                "Learner-license driving window",
+                f"daylight only for the first {s['night_blackout_months']} months",
+            )
+        )
+    if s.get("digital_accepted"):
+        rows.append(("Log copy accepted", "digital or printed"))
     return "\n".join(
         f"      <tr><th scope=\"row\">{esc(k)}</th><td>{esc(v)}</td></tr>" for k, v in rows
     )
@@ -164,18 +229,23 @@ def sources_block(s: dict, verified_on: str) -> str:
     )
 
 
-def cta_block(state_name: str) -> str:
-    subject = esc(f"Android waitlist — {state_name}")
-    body = esc(
+def cta_block(state_name: str | None) -> str:
+    subject_state = state_name or "state not entered"
+    body_state = state_name or "[enter your state]"
+    subject = f"Android waitlist — {subject_state}"
+    body = (
         "I'd like to be notified once when Driving Log is available for Android. "
         "My state: {state}. (Your email is used only for that one notification, never shared, "
-        "and deleted on request — just reply 'remove' any time.)".format(state=state_name)
+        "and deleted on request — just reply 'remove' any time.)".format(state=body_state)
+    )
+    mailto = "mailto:" + SUPPORT_EMAIL + "?" + urllib.parse.urlencode(
+        {"subject": subject, "body": body}
     )
     return f"""
   <div class="cta">
     <a class="button" href="{APP_STORE_URL}">Download for iPhone</a>
     <a class="button secondary"
-       href="mailto:{SUPPORT_EMAIL}?subject={subject}&amp;body={body}">Android — join the waitlist</a>
+       href="{esc(mailto)}">Android — join the waitlist</a>
     <p class="fineprint">The waitlist is a plain email to us: it is used only to send one
     notification if an Android version ships, never shared, and deleted on request.</p>
   </div>"""
@@ -197,29 +267,46 @@ STYLE = """
     nav { font-size: 15px; margin-bottom: 2em; }
 """
 
-DISCLAIMER = (
+STATE_DISCLAIMER = (
     '<p class="disclaimer">Driving Log is an independent app and this page is general '
     "information, not legal advice. The app does not produce official state forms and says so "
     "on every document it prints. Requirements are summarised from the official sources linked "
     "above and can change; your state's own instructions always take precedence.</p>"
 )
 
+GENERAL_DISCLAIMER = (
+    '<p class="disclaimer">Driving Log is an independent app and this page is general '
+    "information, not legal advice. Requirements can change; confirm current rules and forms "
+    "with your state's licensing authority.</p>"
+)
 
-def page_shell(title: str, description: str, canonical: str, body: str) -> str:
+
+def page_shell(
+    title: str,
+    description: str,
+    canonical: str,
+    body: str,
+    disclaimer: str = GENERAL_DISCLAIMER,
+) -> str:
     return f"""<!doctype html>
-<html lang="en">
+<html lang="en-US">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{esc(title)}</title>
   <meta name="description" content="{esc(description)}">
+  <meta name="robots" content="index,follow">
   <link rel="canonical" href="{esc(canonical)}">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{esc(title)}">
+  <meta property="og:description" content="{esc(description)}">
+  <meta property="og:url" content="{esc(canonical)}">
   <style>{STYLE}</style>
 </head>
 <body>
   <nav><a href="/">Driving Log</a> › <a href="/guides/">State guides</a></nav>
 {body}
-{DISCLAIMER}
+{disclaimer}
 </body>
 </html>
 """
@@ -228,13 +315,13 @@ def page_shell(title: str, description: str, canonical: str, body: str) -> str:
 def state_page(code: str, s: dict, verified_on: str) -> tuple[str, str, str]:
     name = s["name"]
     slug = SLUGS[code]
-    total = s.get("total")
+    total = target_hours(s)
     night = s.get("night")
-    title = f"{name} supervised driving hours for a learner permit ({total} hours)"
+    title = f"{name} supervised driving: {total}"
     description = (
-        f"{name} requires {total} supervised practice hours"
+        f"Understand {name}'s supervised practice requirements ({total})"
         + (f", {night} at night" if night else "")
-        + f", before a first licence. What counts, which form to use, and how to keep a record "
+        + ". See what counts, which form to use, and how to keep a record "
         f"that holds up — checked against official {name} sources."
     )
     canonical = f"{BASE_URL}/guides/{slug}.html"
@@ -253,6 +340,14 @@ def state_page(code: str, s: dict, verified_on: str) -> tuple[str, str, str]:
         form_bits.append(esc(s["signer_note"]))
     form_para = f"<p>{' — '.join(form_bits)}</p>" if form_bits else ""
 
+    required_fields = ""
+    if s.get("required_fields"):
+        items = "".join(f"<li>{esc(field)}</li>" for field in s["required_fields"])
+        required_fields = (
+            "<h3>State-specific details to preserve</h3>"
+            f"<ul>{items}</ul>"
+        )
+
     body = f"""  <h1>{esc(name)}: supervised driving hours, explained</h1>
   <p>{EDITORIAL[code]}</p>
 
@@ -260,13 +355,14 @@ def state_page(code: str, s: dict, verified_on: str) -> tuple[str, str, str]:
   <table>
 {requirement_rows(s)}
   </table>
-  {curfew}
+{curfew}
 
   <h2>The paperwork</h2>
-  {form_para}
-  {sources_block(s, verified_on)}
+{form_para}
+{required_fields}
+{sources_block(s, verified_on)}
 
-  {extras}
+{extras}
 
   <h2>How Driving Log helps in {esc(name)}</h2>
   <p>Driving Log tracks each drive with its day and night minutes and shows two numbers side by
@@ -276,7 +372,7 @@ def state_page(code: str, s: dict, verified_on: str) -> tuple[str, str, str]:
   layouts for several states are part of the one-time Pro upgrade.</p>
 {cta_block(name)}"""
 
-    return slug, page_shell(title, description, canonical, body), title
+    return slug, page_shell(title, description, canonical, body, STATE_DISCLAIMER), title
 
 
 def comparison_page(verified_on: str) -> tuple[str, str, str]:
@@ -306,15 +402,15 @@ def comparison_page(verified_on: str) -> tuple[str, str, str]:
       checksummed JSON backup you keep yourself. A deleted drive stays recoverable for 30
       days.</td></tr>
       <tr><th scope="row">Price</th><td>Core tracking, sync, backups and the printable record
-      are free. A one-time $4.99 purchase adds multiple learners, family sharing, CSV import
-      and state worksheet layouts. No subscription.</td></tr>
+      are free. A one-time Pro purchase adds multiple learners, private iCloud family
+      collaboration, CSV import and supported state worksheet layouts. No subscription.</td></tr>
   </table>
 
   <h2>Moving an existing log</h2>
   <p>If your current app can export drives as a <strong>CSV file</strong>, Driving Log can
   import it: it shows a preview first, adds nothing until you confirm, never creates
   duplicates, and lists any row it cannot read with its line number and the reason. Column
-  names and date formats from common log exports are recognised automatically.</p>
+  names and date formats from common log exports are recognized automatically.</p>
   <p>We have not verified any specific app's export format, including RoadReady's — so we
   won't promise one-click migration. If your export doesn't import cleanly, email us the
   column headers (not your data) at <a href="mailto:{SUPPORT_EMAIL}">{SUPPORT_EMAIL}</a> and
@@ -323,8 +419,11 @@ def comparison_page(verified_on: str) -> tuple[str, str, str]:
   <h2>Where RoadReady may fit better</h2>
   <p>RoadReady is free, long-established, and some state programs distribute materials built
   around it. Driving Log is currently iPhone-only, while RoadReady also offers an Android
-  app.</p>
-{cta_block("my state")}"""
+  app. Check RoadReady's current listings on the
+  <a href="https://apps.apple.com/us/app/roadready/id699534935" rel="noopener">App Store</a>
+  and <a href="https://play.google.com/store/apps/details?id=com.saferoadsalliance.roadready"
+  rel="noopener">Google Play</a>.</p>
+{cta_block(None)}"""
     return slug, page_shell(title, description, canonical, body), title
 
 
@@ -358,7 +457,12 @@ def main() -> None:
     entries.append((slug, title))
     (OUT_DIR / "index.html").write_text(index_page(entries), encoding="utf-8")
 
-    urls = [f"{BASE_URL}/", f"{BASE_URL}/guides/"] + [
+    urls = [
+        f"{BASE_URL}/",
+        f"{BASE_URL}/support.html",
+        f"{BASE_URL}/privacy.html",
+        f"{BASE_URL}/guides/",
+    ] + [
         f"{BASE_URL}/guides/{s}.html" for s, _ in entries
     ]
     sitemap = "\n".join(

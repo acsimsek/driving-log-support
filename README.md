@@ -8,11 +8,15 @@ generated — do not edit those by hand.
 
 ```bash
 python3 generate_pages.py
+python3 -m unittest -v
+git diff --exit-code
 ```
 
 Reads `../driving-log-ios/states.json`. The generator publishes only whitelisted, user-facing
 fields (internal research notes never reach a page), stamps every page with the rule data's
 `verified_on` date, and **refuses to build** when that date is older than 90 days.
+The tests also cover conditional hour paths, source/status validation, mailto encoding and
+the fields that must never be published.
 
 ## Measurement
 

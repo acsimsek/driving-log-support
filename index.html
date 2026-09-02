@@ -1,24 +1,115 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-US">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Driving Log</title>
+  <title>Driving Log — Supervised Driving Hours for iPhone</title>
+  <meta name="description" content="Track supervised driving hours, day and night progress, permit milestones and printable records on iPhone. Free core logging, no account, ads or tracking.">
+  <meta name="robots" content="index,follow">
+  <link rel="canonical" href="https://drivinglog.acsimsek.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Driving Log — Supervised Driving Hours for iPhone">
+  <meta property="og:description" content="A private, state-aware driving log for learner drivers and supervising families.">
+  <meta property="og:url" content="https://drivinglog.acsimsek.com/">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Driving Log: Supervised Hours",
+    "operatingSystem": "iOS",
+    "applicationCategory": "EducationalApplication",
+    "description": "A private driving log for supervised learner-driver hours, progress and printable supporting records.",
+    "url": "https://drivinglog.acsimsek.com/",
+    "downloadUrl": "https://apps.apple.com/us/app/driving-log-supervised-hours/id6797597475",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+      "description": "Core driving log features are free; an optional one-time Pro purchase adds advanced features."
+    }
+  }
+  </script>
   <style>
-    body { font: 17px/1.55 -apple-system, BlinkMacSystemFont, sans-serif; color: #17242a; margin: 0 auto; max-width: 760px; padding: 48px 20px 64px; }
-    h1 { line-height: 1.2; color: #0f5963; }
-    a { color: #0f5963; }
+    :root { color-scheme: light; --ink: #17242a; --teal: #0f5963; --line: #d8e2e4; --soft: #eef5f5; }
+    * { box-sizing: border-box; }
+    body { font: 17px/1.55 -apple-system, BlinkMacSystemFont, sans-serif; color: var(--ink); margin: 0; background: #fff; }
+    main, footer { max-width: 820px; margin: 0 auto; padding: 0 22px; }
+    header { background: linear-gradient(145deg, #eff9f8, #fff); border-bottom: 1px solid var(--line); }
+    .hero { max-width: 820px; margin: 0 auto; padding: 72px 22px 64px; }
+    h1 { max-width: 720px; font-size: clamp(2.35rem, 7vw, 4rem); line-height: 1.05; letter-spacing: -.035em; color: var(--teal); margin: 0 0 20px; }
+    h2 { color: var(--teal); margin-top: 2.3em; line-height: 1.2; }
+    h3 { margin: 0 0 6px; }
+    a { color: var(--teal); }
+    .lede { max-width: 680px; font-size: 1.2rem; }
+    .button { display: inline-block; background: var(--teal); color: #fff; padding: 13px 20px; border-radius: 11px; text-decoration: none; font-weight: 650; margin: 12px 8px 0 0; }
+    .button.secondary { background: #fff; color: var(--teal); border: 1.5px solid var(--teal); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+    .card { border: 1px solid var(--line); border-radius: 16px; padding: 20px; background: #fff; }
+    .card p { margin: 0; color: #48585e; }
+    .callout { background: var(--soft); border-radius: 16px; padding: 22px; margin: 36px 0; }
+    footer { color: #536268; font-size: 14px; padding-top: 38px; padding-bottom: 56px; }
+    footer a { margin-right: 18px; }
   </style>
 </head>
 <body>
-  <h1>Driving Log</h1>
-  <p>Private supervised-driving records, progress explanations, backups, and printable supporting logs.</p>
-  <ul>
-    <li><a href="https://apps.apple.com/us/app/driving-log-supervised-hours/id6797597475">Download on the App Store</a></li>
-    <li><a href="guides/">State guides — supervised hour requirements</a></li>
-    <li><a href="support.html">Support</a></li>
-    <li><a href="privacy.html">Privacy Policy</a></li>
-  </ul>
-  <p>Contact: <a href="mailto:support@acsimsek.com">support@acsimsek.com</a></p>
+  <header>
+    <div class="hero">
+      <h1>Supervised driving hours, without the guesswork.</h1>
+      <p class="lede">Driving Log keeps every practice drive, separates day and night time,
+      explains what counts toward your state requirement and creates a printable supporting
+      record. No app-specific account, ads or tracking.</p>
+      <a class="button" href="https://apps.apple.com/us/app/driving-log-supervised-hours/id6797597475">Download free for iPhone</a>
+      <a class="button secondary" href="guides/">Check your state's requirements</a>
+    </div>
+  </header>
+
+  <main>
+    <h2>Built for the whole learning period</h2>
+    <div class="grid">
+      <section class="card">
+        <h3>Record reliably</h3>
+        <p>Use the timer or enter a completed drive manually. An interrupted timer can be
+        recovered when you return.</p>
+      </section>
+      <section class="card">
+        <h3>Understand progress</h3>
+        <p>See logged time beside the time counted under your selected state's rules, including
+        night targets and applicable caps.</p>
+      </section>
+      <section class="card">
+        <h3>Keep control of the data</h3>
+        <p>Records stay on the device and, when available, in private iCloud. Create your own
+        JSON backup and recover deleted drives from Trash.</p>
+      </section>
+      <section class="card">
+        <h3>Prepare a paper trail</h3>
+        <p>Generate a printable supporting record with drive details and signature space. It is
+        clearly identified as supporting material, not an official state form.</p>
+      </section>
+    </div>
+
+    <div class="callout">
+      <h2>Core logging stays free</h2>
+      <p>Recording, progress, private iCloud sync, JSON backup and restore, Trash, and the
+      general printable PDF are free. The optional one-time Pro purchase adds separate learner
+      profiles, private iCloud family collaboration, CSV import and supported state worksheet
+      layouts. There is no subscription.</p>
+    </div>
+
+    <h2>Start with the official rules</h2>
+    <p>Our <a href="guides/">state guides</a> summarize supervised-driving requirements using
+    linked government sources and show when each rule set was last verified. Driving Log is
+    independent and is not affiliated with any DMV or licensing authority; official
+    instructions always take precedence.</p>
+
+    <p><a href="guides/roadready-alternative.html">Looking for a RoadReady alternative?</a>
+    Read the factual comparison, including the limits of CSV migration.</p>
+  </main>
+
+  <footer>
+    <a href="support.html">Support</a>
+    <a href="privacy.html">Privacy Policy</a>
+    <a href="mailto:support@acsimsek.com">Contact</a>
+  </footer>
 </body>
 </html>

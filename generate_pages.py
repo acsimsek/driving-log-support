@@ -25,7 +25,8 @@ REPO = pathlib.Path(__file__).resolve().parent
 STATES_JSON = REPO.parent / "driving-log-ios" / "states.json"
 OUT_DIR = REPO / "guides"
 BASE_URL = "https://drivinglog.acsimsek.com"
-APP_STORE_URL = "https://apps.apple.com/us/app/driving-log-supervised-hours/id6797597475"
+APP_STORE_BASE_URL = "https://apps.apple.com/app/apple-store/id6797597475"
+APP_STORE_PROVIDER_TOKEN = "129248493"
 SUPPORT_EMAIL = "support@acsimsek.com"
 FRESHNESS_LIMIT_DAYS = 90
 
@@ -229,7 +230,14 @@ def sources_block(s: dict, verified_on: str) -> str:
     )
 
 
-def cta_block(state_name: str | None) -> str:
+def campaign_url(campaign: str) -> str:
+    query = urllib.parse.urlencode(
+        {"pt": APP_STORE_PROVIDER_TOKEN, "ct": campaign, "mt": "8"}
+    )
+    return f"{APP_STORE_BASE_URL}?{query}"
+
+
+def cta_block(state_name: str | None, campaign: str) -> str:
     subject_state = state_name or "state not entered"
     body_state = state_name or "[enter your state]"
     subject = f"Android waitlist — {subject_state}"
@@ -243,7 +251,7 @@ def cta_block(state_name: str | None) -> str:
     )
     return f"""
   <div class="cta">
-    <a class="button" href="{APP_STORE_URL}">Download for iPhone</a>
+    <a class="button" href="{esc(campaign_url(campaign))}">Download for iPhone</a>
     <a class="button secondary"
        href="{esc(mailto)}">Android — join the waitlist</a>
     <p class="fineprint">The waitlist is a plain email to us: it is used only to send one
@@ -370,7 +378,7 @@ def state_page(code: str, s: dict, verified_on: str) -> tuple[str, str, str]:
   reason whenever they differ. The core app is free, keeps everything on your device and private
   iCloud, and needs no account. A printable record of every entry is included; sourced worksheet
   layouts for several states are part of the one-time Pro upgrade.</p>
-{cta_block(name)}"""
+{cta_block(name, f"guide-{code.lower()}")}"""
 
     return slug, page_shell(title, description, canonical, body, STATE_DISCLAIMER), title
 
@@ -423,7 +431,7 @@ def comparison_page(verified_on: str) -> tuple[str, str, str]:
   <a href="https://apps.apple.com/us/app/roadready/id699534935" rel="noopener">App Store</a>
   and <a href="https://play.google.com/store/apps/details?id=com.saferoadsalliance.roadready"
   rel="noopener">Google Play</a>.</p>
-{cta_block(None)}"""
+{cta_block(None, "compare-roadready")}"""
     return slug, page_shell(title, description, canonical, body), title
 
 

@@ -48,6 +48,7 @@ class GuideGeneratorTests(unittest.TestCase):
         _, minnesota, _ = pages.state_page("MN", self.states["MN"], self.verified_on)
         self.assertIn("Minnesota supervised driving: 40 or 50 hours", minnesota)
         self.assertIn("If the parent completes the 90-minute awareness course", minnesota)
+        self.assertIn("ct=guide-mn", minnesota)
 
         _, nevada, _ = pages.state_page("NV", self.states["NV"], self.verified_on)
         self.assertIn("Nevada supervised driving: 50 or 100 hours", nevada)
@@ -67,10 +68,14 @@ class GuideGeneratorTests(unittest.TestCase):
         self.assertNotIn("$4.99", page)
 
     def test_waitlist_mailto_is_url_encoded(self):
-        block = pages.cta_block(None)
+        block = pages.cta_block(None, "compare-roadready")
         self.assertIn("mailto:support@acsimsek.com?", block)
         self.assertIn("%5Benter+your+state%5D", block)
         self.assertNotIn("My state: [enter your state]", block)
+
+    def test_app_store_campaign_link_is_attributed(self):
+        block = pages.cta_block("California", "guide-ca")
+        self.assertIn("pt=129248493&amp;ct=guide-ca&amp;mt=8", block)
 
     def test_unverified_pilot_state_blocks_build(self):
         data = copy.deepcopy(self.raw)

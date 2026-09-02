@@ -20,9 +20,9 @@ the fields that must never be published.
 
 ## Measurement
 
-- The iPhone CTA currently uses the plain App Store URL. When ready, create Campaign Links in
-  App Store Connect (App Analytics → Campaign links) and replace `APP_STORE_URL` with the
-  `pt`/`ct` parameterised link so downloads attribute per page. Note Apple hides download
-  counts below a small threshold.
+- iPhone CTAs use App Store Campaign Links: `web-home`, `compare-roadready`, and one
+  `guide-xx` campaign per state page. The generator derives each state campaign from its
+  two-letter code, so future guide pages are attributed automatically. Apple displays a
+  campaign after at least five individual Apple Accounts install through its link.
 - The Android waitlist is a mailto to support@acsimsek.com by design: the site itself collects
   nothing, so the privacy page stays honest. Waitlist volume is measured in the inbox.

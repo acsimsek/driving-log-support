@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-US">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,32 +7,57 @@
   <meta name="description" content="Help with Driving Log timers, iCloud sync, backup and restore, Trash, official requirements and privacy.">
   <meta name="robots" content="index,follow">
   <link rel="canonical" href="https://drivinglog.acsimsek.com/support.html">
-  <style>
-    body { font: 17px/1.55 -apple-system, BlinkMacSystemFont, sans-serif; color: #17242a; margin: 0 auto; max-width: 760px; padding: 32px 20px 64px; }
-    h1, h2 { line-height: 1.2; color: #0f5963; }
-    code { background: #eef4f5; padding: 2px 5px; border-radius: 4px; }
-  </style>
+  <link rel="icon" href="/assets/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="/site.css">
 </head>
 <body>
-  <nav><a href="index.html">Driving Log</a></nav>
-  <h1>Driving Log Support</h1>
-  <p>For help, feedback, or a feature request, email <a href="mailto:support@acsimsek.com">support@acsimsek.com</a>. Include the device model, iOS version, Driving Log version/build, and whether iCloud was enabled. Do not attach a backup file unless support explicitly asks for it; backups can contain personal driving information.</p>
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brand" href="/"><img src="/assets/favicon.png" alt="" width="30" height="30">Driving Log</a>
+      <nav>
+        <a href="/guides/">State guides</a>
+        <a href="privacy.html">Privacy</a>
+        <a class="btn" href="https://apps.apple.com/app/apple-store/id6797597475?pt=129248493&amp;ct=web-support&amp;mt=8">Get the app</a>
+      </nav>
+    </div>
+  </header>
 
-  <h2>A timer is still running after relaunch</h2>
-  <p>Open Driving Log and use <strong>End Drive</strong>. If the timer has been running unusually long, choose the real end time shown by the recovery controls. The app does not silently guess forgotten driving time.</p>
+  <main class="wrap narrow page">
+    <h1>Support</h1>
+    <p class="muted">Email <a href="mailto:support@acsimsek.com">support@acsimsek.com</a> for help, feedback or a feature request. Include your device model, iOS version, the Driving Log version, and whether iCloud was enabled. Please don't attach a backup file unless we ask — backups contain personal driving information.</p>
 
-  <h2>iCloud says “Waiting to back up”</h2>
-  <p>Open Profile → iCloud sync details. Confirm the device is signed in to iCloud, iCloud Drive is enabled, and the device has a network connection and available iCloud storage. Local logging remains available while sync is waiting.</p>
+    <div class="faq">
+      <details open>
+        <summary>A timer is still running after relaunch</summary>
+        <p>Open Driving Log and use <strong>End Drive</strong>. If the timer has been running unusually long, choose the real end time shown by the recovery controls. The app never silently guesses forgotten driving time.</p>
+      </details>
+      <details>
+        <summary>iCloud says "Waiting to back up"</summary>
+        <p>Open Profile → iCloud sync details. Check that the device is signed in to iCloud, iCloud Drive is enabled, and there is a network connection and available iCloud storage. Local logging keeps working while sync is waiting.</p>
+      </details>
+      <details>
+        <summary>Restore or move a log to a new phone</summary>
+        <p>Open Profile → Backup and restore to save a JSON backup. On a fresh installation, choose <strong>Restore a backup</strong> before creating a new profile. A restore only adds what is missing; it never overwrites your current profile answers.</p>
+      </details>
+      <details>
+        <summary>Recover a removed drive</summary>
+        <p>Open Profile → Trash. Removed drives can be restored for 30 days unless they were permanently deleted.</p>
+      </details>
+      <details>
+        <summary>Is the printed record an official form?</summary>
+        <p>No. Driving Log is independent and is not affiliated with or approved by any DMV or licensing authority. Its documents are supporting records, clearly labelled as such. Follow the official source links in the app and in the <a href="/guides/">state guides</a>, and confirm current requirements with your licensing authority.</p>
+      </details>
+    </div>
+  </main>
 
-  <h2>Restore or transfer a log</h2>
-  <p>Open Profile → Backup and restore to save a JSON backup. On a clean installation, choose Restore a backup before creating a new profile. A restore adds missing records and does not overwrite current profile answers.</p>
-
-  <h2>Recover a removed drive</h2>
-  <p>Open Profile → Trash. Removed drives can be restored for 30 days unless they were permanently deleted.</p>
-
-  <h2>Official requirements and forms</h2>
-  <p>Driving Log is independent and is not affiliated with or approved by any DMV or licensing authority. Generated documents are supporting records, not official state forms. Always follow the official source links in the app and confirm current requirements with the licensing authority.</p>
-
-  <p><a href="privacy.html">Privacy Policy</a></p>
+  <footer>
+    <div class="wrap">
+      <a href="/">Home</a>
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="/guides/">State guides</a>
+      <a href="mailto:support@acsimsek.com">support@acsimsek.com</a>
+    </div>
+  </footer>
 </body>
 </html>

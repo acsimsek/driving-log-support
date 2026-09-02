@@ -454,6 +454,39 @@ def sources_block(s: dict, verified_on: str) -> str:
     )
 
 
+def stat_cards(s: dict) -> str:
+    cards: list[tuple[str, str]] = []
+    if s.get("no_hour_requirement"):
+        cards.append(("No set minimum", "supervised hours in the cited source"))
+    else:
+        cards.append((target_hours(s).replace(" hours", ""), "supervised hours required"))
+    if s.get("night"):
+        cards.append((str(s["night"]), "of those hours at night"))
+    if s.get("permit_months"):
+        cards.append((f"{s['permit_months']} mo", "permit holding period"))
+    elif s.get("permit_days"):
+        cards.append((f"{s['permit_days']} days", "permit holding period"))
+    if s.get("daily_cap"):
+        cards.append((f"{s['daily_cap']} h/day", "maximum that counts"))
+    elif s.get("weekly_cap"):
+        cards.append((f"{s['weekly_cap']} h/wk", "maximum that counts"))
+    elif s.get("min_days"):
+        cards.append((str(s["min_days"]), "different practice days"))
+    return "".join(
+        f'<div class="stat"><b>{esc(value)}</b><span>{esc(label)}</span></div>'
+        for value, label in cards
+    )
+
+
+def guide_summary(s: dict) -> str:
+    if s.get("no_hour_requirement"):
+        return "No set hour minimum"
+    summary = target_hours(s)
+    if s.get("night"):
+        summary += f" · {s['night']} at night"
+    return summary
+
+
 def campaign_url(campaign: str) -> str:
     query = urllib.parse.urlencode(
         {"pt": APP_STORE_PROVIDER_TOKEN, "ct": campaign, "mt": "8"}
@@ -473,38 +506,19 @@ def cta_block(state_name: str | None, campaign: str) -> str:
     mailto = "mailto:" + SUPPORT_EMAIL + "?" + urllib.parse.urlencode(
         {"subject": subject, "body": body}
     )
+    where = f" in {esc(state_name)}" if state_name else ""
     return f"""
-  <div class="cta">
-    <a class="button" href="{esc(campaign_url(campaign))}">Download for iPhone</a>
-    <a class="button secondary"
-       href="{esc(mailto)}">Android — join the waitlist</a>
+  <div class="cta-panel">
+    <h2>Keep the log{where} with Driving Log</h2>
+    <p>Free for one learner, no account, nothing collected. Every drive is stored on your iPhone and in your own private iCloud.</p>
+    <div class="btn-row">
+      <a class="btn" href="{esc(campaign_url(campaign))}">Download free for iPhone</a>
+      <a class="btn secondary" href="{esc(mailto)}">Android — join the waitlist</a>
+    </div>
     <p class="fineprint">The waitlist is a plain email to us: it is used only to send one
     notification if an Android version ships, never shared, and deleted on request.</p>
   </div>"""
 
-
-STYLE = """
-    body { font: 17px/1.55 -apple-system, BlinkMacSystemFont, sans-serif; color: #17242a; margin: 0 auto; max-width: 760px; padding: 48px 20px 64px; }
-    h1 { line-height: 1.2; color: #0f5963; }
-    h2 { color: #0f5963; margin-top: 2em; }
-    a { color: #0f5963; }
-    table { border-collapse: collapse; width: 100%; margin: 1em 0; }
-    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #d8e2e4; vertical-align: top; }
-    th[scope=row] { width: 45%; font-weight: 600; }
-    .cta { margin: 2em 0; }
-    .button { display: inline-block; background: #0f5963; color: #fff; padding: 12px 18px; border-radius: 10px; text-decoration: none; margin: 0 8px 8px 0; }
-    .button.secondary { background: #fff; color: #0f5963; border: 1.5px solid #0f5963; }
-    .fineprint, .sources, .disclaimer { font-size: 14px; color: #4a5a5f; }
-    .disclaimer { border-top: 1px solid #d8e2e4; margin-top: 3em; padding-top: 1em; }
-    nav { font-size: 15px; margin-bottom: 2em; }
-    .guide-search { display: block; margin: 1.5em 0; }
-    .guide-search span { display: block; font-weight: 600; margin-bottom: .4em; }
-    .guide-search input { box-sizing: border-box; width: 100%; padding: 12px 14px; border: 1px solid #b7c7ca; border-radius: 10px; font: inherit; }
-    .guide-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; padding: 0; }
-    .guide-grid li { list-style: none; border: 1px solid #d8e2e4; border-radius: 12px; background: #f8fbfb; }
-    .guide-grid a { display: block; padding: 13px 15px; font-weight: 600; text-decoration: none; }
-    .comparison-card { margin-top: 2em; padding: 16px 18px; border-left: 4px solid #0f5963; background: #f1f7f7; }
-"""
 
 STATE_DISCLAIMER = (
     '<p class="disclaimer">Driving Log is an independent app and this page is general '
@@ -540,12 +554,35 @@ def page_shell(
   <meta property="og:title" content="{esc(title)}">
   <meta property="og:description" content="{esc(description)}">
   <meta property="og:url" content="{esc(canonical)}">
-  <style>{STYLE}</style>
+  <meta property="og:image" content="{BASE_URL}/assets/icon-512.png">
+  <link rel="icon" href="/assets/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="/site.css">
 </head>
 <body>
-  <nav><a href="/">Driving Log</a> › <a href="/guides/">State guides</a></nav>
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brand" href="/"><img src="/assets/favicon.png" alt="" width="30" height="30">Driving Log</a>
+      <nav>
+        <a href="/guides/">State guides</a>
+        <a href="/support.html">Support</a>
+        <a class="btn" href="{esc(campaign_url("web-nav"))}">Get the app</a>
+      </nav>
+    </div>
+  </header>
 {body}
+  <div class="wrap narrow">
 {disclaimer}
+  </div>
+  <footer>
+    <div class="wrap">
+      <a href="/">Home</a>
+      <a href="/guides/">State guides</a>
+      <a href="/support.html">Support</a>
+      <a href="/privacy.html">Privacy Policy</a>
+      <a href="mailto:{SUPPORT_EMAIL}">{SUPPORT_EMAIL}</a>
+    </div>
+  </footer>
 </body>
 </html>
 """
@@ -601,12 +638,22 @@ def state_page(code: str, s: dict, verified_on: str) -> tuple[str, str, str]:
         )
 
     heading = (
-        f"{name}: learner permit practice requirements"
+        f"{name} learner permit practice requirements"
         if s.get("no_hour_requirement")
-        else f"{name}: supervised driving hours, explained"
+        else f"{name} supervised driving hours"
     )
-    body = f"""  <h1>{esc(heading)}</h1>
-  <p>{editorial_paragraph(s)}</p>
+    if s.get("permit_curfew"):
+        curfew = f'<div class="callout warn"><strong>Permit-stage limit:</strong> {esc(s["permit_curfew"])}</div>'
+    body = f"""  <section class="guide-hero">
+    <div class="wrap narrow">
+      <p class="crumbs"><a href="/">Driving Log</a> › <a href="/guides/">State guides</a> › {esc(name)}</p>
+      <h1>{esc(heading)}</h1>
+      <p class="lede">Verified against official {esc(name)} sources on {esc(verified_on)}.</p>
+      <div class="stats">{stat_cards(s)}</div>
+    </div>
+  </section>
+  <main class="wrap narrow prose">
+  <div class="callout">{editorial_paragraph(s)}</div>
 
   <h2>The requirement at a glance</h2>
   <table>
@@ -628,7 +675,9 @@ def state_page(code: str, s: dict, verified_on: str) -> tuple[str, str, str]:
   rules — with the reason whenever they differ. The core app is free, keeps everything on your device and private
   iCloud, and needs no account. A printable record of every entry is included; sourced worksheet
   layouts for several states are part of the one-time Pro upgrade.</p>
-{cta_block(name, f"guide-{code.lower()}")}"""
+{cta_block(name, f"guide-{code.lower()}")}
+  <p class="state-nav"><a href="/guides/">← All state guides</a><a href="/guides/roadready-alternative.html">Switching from RoadReady? →</a></p>
+  </main>"""
 
     return slug, page_shell(title, description, canonical, body, STATE_DISCLAIMER), title
 
@@ -641,11 +690,16 @@ def comparison_page(verified_on: str) -> tuple[str, str, str]:
         "state-aware totals, pricing and importing an existing CSV log."
     )
     canonical = f"{BASE_URL}/guides/{slug}.html"
-    body = f"""  <h1>Looking for a RoadReady alternative?</h1>
-  <p>RoadReady is the best-known supervised-driving log and many state programs recommend it.
-  If it works for your family, keep using it. This page is for families who want a different
-  trade-off — and it sticks to facts we can stand behind.</p>
-
+    body = f"""  <section class="guide-hero">
+    <div class="wrap narrow">
+      <p class="crumbs"><a href="/">Driving Log</a> › <a href="/guides/">State guides</a> › RoadReady comparison</p>
+      <h1>Looking for a RoadReady alternative?</h1>
+      <p class="lede">RoadReady is the best-known supervised-driving log and many state programs recommend it.
+      If it works for your family, keep using it. This page is for families who want a different
+      trade-off — and it sticks to facts we can stand behind.</p>
+    </div>
+  </section>
+  <main class="wrap narrow prose">
   <h2>What Driving Log does differently</h2>
   <table>
       <tr><th scope="row">Account</th><td>None. No sign-up, no login. Your log lives on your
@@ -680,27 +734,37 @@ def comparison_page(verified_on: str) -> tuple[str, str, str]:
   <a href="https://apps.apple.com/us/app/roadready/id699534935" rel="noopener">App Store</a>
   and <a href="https://play.google.com/store/apps/details?id=com.saferoadsalliance.roadready"
   rel="noopener">Google Play</a>.</p>
-{cta_block(None, "compare-roadready")}"""
+{cta_block(None, "compare-roadready")}
+  <p class="state-nav"><a href="/guides/">← All state guides</a></p>
+  </main>"""
     return slug, page_shell(title, description, canonical, body), title
 
 
-def index_page(entries: list[tuple[str, str]]) -> str:
+def index_page(entries: list[tuple[str, str, str]], verified_on: str) -> str:
     comparison = next(entry for entry in entries if entry[0] == "roadready-alternative")
     state_entries = [entry for entry in entries if entry[0] != "roadready-alternative"]
     items = "".join(
-        f'<li data-guide><a href="/guides/{slug}.html">{esc(title)}</a></li>'
-        for slug, title in sorted(state_entries, key=lambda entry: entry[1])
+        f'<li data-guide><a href="/guides/{slug}.html"><strong>{esc(name)}</strong>'
+        f"<span>{esc(summary)}</span></a></li>"
+        for slug, name, summary in sorted(state_entries, key=lambda entry: entry[1])
     )
-    body = f"""  <h1>State guides</h1>
-  <p>Supervised-driving requirements for learner drivers in all 50 states and Washington, DC,
-  summarised from official state sources with the verification date on every page.</p>
-  <label class="guide-search"><span>Find your state</span>
-    <input type="search" id="guide-filter" placeholder="Start typing a state name"
-      autocomplete="off">
-  </label>
-  <ul class="guide-grid" id="guide-list">{items}</ul>
-  <p class="comparison-card"><strong>Switching from another log?</strong><br>
-    <a href="/guides/{comparison[0]}.html">{esc(comparison[1])}</a></p>
+    body = f"""  <section class="guide-hero">
+    <div class="wrap">
+      <p class="crumbs"><a href="/">Driving Log</a> › State guides</p>
+      <h1>Supervised driving hours by state</h1>
+      <p class="lede">Hour targets, night rules, permit periods and paperwork for all 50 states and
+      Washington, DC — summarised from official sources, last verified {esc(verified_on)}.</p>
+    </div>
+  </section>
+  <main class="wrap page">
+  <div class="finder">
+    <label for="guide-filter"><strong>Find your state</strong></label>
+    <input type="search" id="guide-filter" placeholder="Start typing a state name…" autocomplete="off">
+    <ul class="guide-grid" id="guide-list">{items}</ul>
+  </div>
+  <div class="callout" style="margin-top:28px"><strong>Switching from another log?</strong>
+    <a href="/guides/{comparison[0]}.html">{esc(comparison[1])}</a></div>
+  </main>
   <script>
     const filter = document.getElementById('guide-filter');
     const guides = [...document.querySelectorAll('[data-guide]')];
@@ -727,11 +791,11 @@ def main() -> None:
     for code, state in states.items():
         slug, html_text, title = state_page(code, state, verified_on)
         (OUT_DIR / f"{slug}.html").write_text(html_text, encoding="utf-8")
-        entries.append((slug, title))
+        entries.append((slug, state["name"], guide_summary(state)))
     slug, html_text, title = comparison_page(verified_on)
     (OUT_DIR / f"{slug}.html").write_text(html_text, encoding="utf-8")
-    entries.append((slug, title))
-    (OUT_DIR / "index.html").write_text(index_page(entries), encoding="utf-8")
+    entries.append((slug, title, ""))
+    (OUT_DIR / "index.html").write_text(index_page(entries, verified_on), encoding="utf-8")
 
     urls = [
         f"{BASE_URL}/",
@@ -739,7 +803,7 @@ def main() -> None:
         f"{BASE_URL}/privacy.html",
         f"{BASE_URL}/guides/",
     ] + [
-        f"{BASE_URL}/guides/{s}.html" for s, _ in entries
+        f"{BASE_URL}/guides/{entry[0]}.html" for entry in entries
     ]
     sitemap = "\n".join(
         ['<?xml version="1.0" encoding="UTF-8"?>',

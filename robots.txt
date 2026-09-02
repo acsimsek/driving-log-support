@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://drivinglog.acsimsek.com/sitemap.xml

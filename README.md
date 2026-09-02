@@ -4,6 +4,10 @@ Static site for Driving Log (GitHub Pages). `index.html`, `support.html` and `pr
 are hand-edited. Everything under `guides/`, plus `sitemap.xml` and `robots.txt`, is
 generated — do not edit those by hand.
 
+The guide build covers all 50 states plus Washington, DC. The seven original pilot URLs are
+kept stable; every other jurisdiction uses a predictable
+`guides/<state-name>-supervised-driving-hours.html` URL.
+
 ## Regenerating the guides
 
 ```bash
@@ -14,9 +18,11 @@ git diff --exit-code
 
 Reads `../driving-log-ios/states.json`. The generator publishes only whitelisted, user-facing
 fields (internal research notes never reach a page), stamps every page with the rule data's
-`verified_on` date, and **refuses to build** when that date is older than 90 days.
-The tests also cover conditional hour paths, source/status validation, mailto encoding and
-the fields that must never be published.
+`verified_on` date, and **refuses to build** when that date is older than 90 days. It also refuses
+partial coverage, unverified jurisdictions, missing official sources and contradictory hour data.
+The tests cover all 51 jurisdiction codes, unique metadata and slugs, conditional and staged hour
+paths, no-hour exceptions, source/status validation, campaign attribution, mailto encoding and the
+fields that must never be published.
 
 ## Measurement
 

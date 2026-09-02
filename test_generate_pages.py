@@ -38,6 +38,30 @@ class GuideGeneratorTests(unittest.TestCase):
         for state in self.states.values():
             self.assertTrue(forbidden.isdisjoint(state))
 
+    def test_all_fifty_states_and_dc_are_publishable(self):
+        self.assertEqual(set(self.states), pages.EXPECTED_JURISDICTIONS)
+        self.assertEqual(len(self.states), 51)
+        slugs = [pages.slug_for(code, state["name"]) for code, state in self.states.items()]
+        self.assertEqual(len(slugs), len(set(slugs)))
+
+    def test_every_state_page_has_unique_metadata_source_and_campaign(self):
+        titles = set()
+        descriptions = set()
+        for code, state in self.states.items():
+            _, page, title = pages.state_page(code, state, self.verified_on)
+            self.assertNotIn("None hours", page)
+            self.assertIn(state["source"].replace("&", "&amp;"), page)
+            self.assertIn(f"ct=guide-{code.lower()}", page)
+            title_tag = page.split("<title>", 1)[1].split("</title>", 1)[0]
+            description = page.split('<meta name="description" content="', 1)[1].split('">', 1)[0]
+            titles.add(title_tag)
+            descriptions.add(description)
+            self.assertEqual(title_tag, title)
+            self.assertLessEqual(len(title_tag), 60)
+            self.assertLessEqual(len(description), 165)
+        self.assertEqual(len(titles), 51)
+        self.assertEqual(len(descriptions), 51)
+
     def test_nested_conditional_target_is_whitelisted(self):
         conditional = self.states["MN"]["conditional_target"]
         self.assertEqual(conditional["total"], 40)
@@ -61,6 +85,28 @@ class GuideGeneratorTests(unittest.TestCase):
         self.assertIn("licensed 5+ years", north_carolina)
         self.assertIn("digital or printed", north_carolina)
 
+        _, arkansas, _ = pages.state_page("AR", self.states["AR"], self.verified_on)
+        self.assertIn("No numeric minimum is stated", arkansas)
+        self.assertIn("180 days", arkansas)
+
+        _, hawaii, _ = pages.state_page("HI", self.states["HI"], self.verified_on)
+        self.assertIn("Hawaii supervised driving: 50 hours", hawaii)
+        self.assertIn("10 hours", hawaii)
+        self.assertIn("age 21+", hawaii)
+        self.assertIn("notarized", hawaii)
+        self.assertIn("Acknowledgement-of-Practice-Driving-Log.pdf", hawaii)
+
+        _, iowa, _ = pages.state_page("IA", self.states["IA"], self.verified_on)
+        self.assertIn("20 hours before the intermediate license", iowa)
+        self.assertIn("10 additional hours", iowa)
+
+        _, nebraska, _ = pages.state_page("NE", self.states["NE"], self.verified_on)
+        self.assertIn("Alternative path", nebraska)
+        self.assertIn("alternative to the 50-hour parent certification", nebraska)
+
+        _, north_dakota, _ = pages.state_page("ND", self.states["ND"], self.verified_on)
+        self.assertIn("rural, city, gravel dirt aggregate road, night, winter", north_dakota)
+
     def test_comparison_does_not_claim_roadready_specific_import(self):
         _, page, _ = pages.comparison_page(self.verified_on)
         self.assertIn("not verified any specific app", page)
@@ -77,7 +123,7 @@ class GuideGeneratorTests(unittest.TestCase):
         block = pages.cta_block("California", "guide-ca")
         self.assertIn("pt=129248493&amp;ct=guide-ca&amp;mt=8", block)
 
-    def test_unverified_pilot_state_blocks_build(self):
+    def test_unverified_state_blocks_build(self):
         data = copy.deepcopy(self.raw)
         next(state for state in data["states"] if state["code"] == "CA")["status"] = "draft"
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):

@@ -34,17 +34,36 @@ FRESHNESS_LIMIT_DAYS = 90
 PUBLIC_FIELDS = {
     "code", "name", "total", "total_minutes", "night", "night_minutes", "unit",
     "permit_days", "permit_months", "min_days", "daily_cap", "weekly_cap",
+    "permit_days_adult", "permit_days_without_school",
     "supervisor_min_age", "supervisor_min_license_years",
     "output", "signature", "night_definition", "supervisor_note", "signer_note",
     "permit_curfew", "extra_requirements", "required_fields", "source", "secondary_source",
     "night_blackout_months", "digital_accepted",
+    "no_hour_requirement", "counts_professional_instruction", "effective_from",
+    "adult_path", "age_eighteen_path", "required_conditions",
 }
 
 CONDITIONAL_TARGET_FIELDS = {
     "condition", "total", "total_minutes", "night", "night_minutes",
 }
 
-PILOT = ["CA", "TX", "FL", "NC", "WI", "MN", "NV"]
+ALTERNATIVE_REQUIREMENT_FIELDS = {
+    "condition", "replaces_hour_target", "note",
+}
+
+MILESTONE_FIELDS = {
+    "total", "night", "additional_total", "additional_night", "note",
+}
+
+CATEGORY_FIELDS = {"name", "hours"}
+
+EXPECTED_JURISDICTIONS = {
+    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL",
+    "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT",
+    "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI",
+    "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY", "DC",
+}
+EXPECTED_JURISDICTION_COUNT = len(EXPECTED_JURISDICTIONS)
 
 SLUGS = {
     "CA": "california-supervised-driving-hours",
@@ -101,6 +120,87 @@ EDITORIAL = {
 }
 
 
+def editorial_paragraph(s: dict) -> str:
+    code = s["code"]
+    if code in EDITORIAL:
+        return EDITORIAL[code]
+
+    name = esc(s["name"])
+    if s.get("no_hour_requirement"):
+        permit = (
+            f" The permit must still be held for {esc(s['permit_days'])} days."
+            if s.get("permit_days")
+            else ""
+        )
+        return (
+            f"{name}'s cited graduated-licensing source does not set a numeric supervised-"
+            f"practice-hour minimum.{permit} That makes the non-hour eligibility steps below "
+            "especially important; an app total is a personal record, not a substitute for "
+            "those state requirements."
+        )
+
+    conditional = s.get("conditional_target")
+    if conditional:
+        return (
+            f"{name} has more than one practice-hour path. The standard target is "
+            f"<strong>{esc(s['total'])} hours</strong>, while the qualifying path described "
+            f"below changes it to <strong>{esc(conditional['total'])} hours</strong>. Record "
+            "which path applies before relying on the lower or higher total."
+        )
+
+    milestones = s.get("milestone")
+    if milestones:
+        return (
+            f"{name} splits supervised practice across licence stages rather than treating "
+            f"the <strong>{esc(s['total'])}-hour</strong> total as one undifferentiated bucket. "
+            "The stage notes below matter because time may need to be completed before a "
+            "particular application step."
+        )
+
+    if s.get("daily_cap") or s.get("weekly_cap"):
+        cap = (
+            f"{s['daily_cap']} hours per day"
+            if s.get("daily_cap")
+            else f"{s['weekly_cap']} hours per week"
+        )
+        return (
+            f"{name} limits how quickly practice can be credited: no more than "
+            f"<strong>{esc(cap)}</strong> counts. A longer drive can still be useful practice, "
+            "but it should not make the state-progress total exceed that cap."
+        )
+
+    if s.get("categories") or s.get("required_conditions"):
+        return (
+            f"{name}'s rule is not only about reaching <strong>{esc(s['total'])} hours</strong>. "
+            "Some of that practice must cover the particular conditions listed below, so a "
+            "dated log should retain more detail than a single running total."
+        )
+
+    if s.get("output"):
+        night = (
+            f", including {esc(s['night'])} at night"
+            if s.get("night")
+            else ""
+        )
+        return (
+            f"For {name}, the practical finish line is not just recording "
+            f"<strong>{esc(s['total'])} supervised hours{night}</strong>; it is being able to "
+            "complete the state's proof or certification described below. Keep dates and "
+            "day/night time as you go so the final paperwork is supportable."
+        )
+
+    night = (
+        f", including {esc(s['night'])} at night"
+        if s.get("night")
+        else ""
+    )
+    return (
+        f"{name} requires <strong>{esc(s['total'])} hours of supervised practice{night}</strong>. "
+        "The official source linked below controls; keep a dated record throughout the permit "
+        "period instead of reconstructing the total at the end."
+    )
+
+
 def fail(message: str) -> None:
     print(f"BUILD BLOCKED: {message}", file=sys.stderr)
     sys.exit(1)
@@ -123,25 +223,64 @@ def load_states(
         )
     states = {}
     for state in data["states"]:
-        if state["code"] in PILOT:
-            if state.get("status") != "verified":
-                fail(f"{state['code']} is in the pilot but is not status=verified.")
-            published = {k: v for k, v in state.items() if k in PUBLIC_FIELDS}
-            conditional = state.get("conditional_target")
-            if conditional is not None:
-                if not isinstance(conditional, dict) or not conditional.get("condition"):
-                    fail(f"{state['code']} has an invalid conditional_target.")
-                published["conditional_target"] = {
-                    k: v for k, v in conditional.items() if k in CONDITIONAL_TARGET_FIELDS
-                }
-            for source_key in ("source", "secondary_source"):
-                source = published.get(source_key)
-                if source is not None and not source.startswith("https://"):
-                    fail(f"{state['code']} {source_key} must use HTTPS.")
-            states[state["code"]] = published
-    missing = [c for c in PILOT if c not in states]
-    if missing:
-        fail(f"states.json is missing pilot states: {missing}")
+        code = state["code"]
+        if code in states:
+            fail(f"states.json contains duplicate jurisdiction code {code}.")
+        if state.get("status") != "verified":
+            fail(f"{code} cannot be published because it is not status=verified.")
+        if not state.get("source"):
+            fail(f"{code} needs an official source before it can be published.")
+        if not state.get("no_hour_requirement") and not state.get("total"):
+            fail(f"{code} needs a positive total or no_hour_requirement=true.")
+        if state.get("no_hour_requirement") and state.get("total"):
+            fail(f"{code} cannot have both total and no_hour_requirement=true.")
+
+        published = {k: v for k, v in state.items() if k in PUBLIC_FIELDS}
+        conditional = state.get("conditional_target")
+        if conditional is not None:
+            if not isinstance(conditional, dict) or not conditional.get("condition"):
+                fail(f"{code} has an invalid conditional_target.")
+            published["conditional_target"] = {
+                k: v for k, v in conditional.items() if k in CONDITIONAL_TARGET_FIELDS
+            }
+        alternative = state.get("alternative_requirement")
+        if alternative is not None:
+            if not isinstance(alternative, dict) or not alternative.get("condition"):
+                fail(f"{code} has an invalid alternative_requirement.")
+            published["alternative_requirement"] = {
+                k: v for k, v in alternative.items() if k in ALTERNATIVE_REQUIREMENT_FIELDS
+            }
+        milestones = state.get("milestone")
+        if milestones is not None:
+            if not isinstance(milestones, dict):
+                fail(f"{code} has invalid milestones.")
+            published["milestone"] = {
+                key: {k: v for k, v in value.items() if k in MILESTONE_FIELDS}
+                for key, value in milestones.items()
+                if isinstance(value, dict)
+            }
+        categories = state.get("categories")
+        if categories is not None:
+            if not isinstance(categories, list):
+                fail(f"{code} has invalid categories.")
+            published["categories"] = [
+                {k: v for k, v in category.items() if k in CATEGORY_FIELDS}
+                for category in categories
+                if isinstance(category, dict)
+            ]
+        for source_key in ("source", "secondary_source"):
+            source = published.get(source_key)
+            if source is not None and not source.startswith("https://"):
+                fail(f"{code} {source_key} must use HTTPS.")
+        states[code] = published
+    found_codes = set(states)
+    if found_codes != EXPECTED_JURISDICTIONS:
+        missing = sorted(EXPECTED_JURISDICTIONS - found_codes)
+        extra = sorted(found_codes - EXPECTED_JURISDICTIONS)
+        fail(
+            f"Expected all 50 states plus Washington, DC "
+            f"({EXPECTED_JURISDICTION_COUNT} jurisdictions); missing={missing}, extra={extra}."
+        )
     return states, verified_on
 
 
@@ -155,6 +294,8 @@ def hours(state: dict, key: str) -> str:
 
 
 def target_hours(s: dict) -> str:
+    if s.get("no_hour_requirement"):
+        return "no state-set hour minimum"
     totals = {s.get("total")}
     if s.get("conditional_target"):
         totals.add(s["conditional_target"].get("total"))
@@ -162,16 +303,40 @@ def target_hours(s: dict) -> str:
     return " or ".join(str(value) for value in values) + " hours"
 
 
+def slug_for(code: str, name: str) -> str:
+    if code in SLUGS:
+        return SLUGS[code]
+    words = "".join(character.lower() if character.isalnum() else " " for character in name)
+    name_slug = "-".join(words.split())
+    return f"{name_slug}-supervised-driving-hours"
+
+
+def humanize(value: str) -> str:
+    return value.replace("_", " ")
+
+
 def requirement_rows(s: dict) -> str:
-    rows = [("Supervised practice required", hours(s, "total"))]
+    if s.get("no_hour_requirement"):
+        rows = [
+            (
+                "State-set practice-hour minimum",
+                "No numeric minimum is stated in the cited graduated-licensing source",
+            )
+        ]
+    else:
+        rows = [("Supervised practice required", hours(s, "total"))]
     conditional = s.get("conditional_target")
     if conditional and conditional.get("total") is not None:
         condition = conditional["condition"]
         condition = condition[:1].lower() + condition[1:]
+        value = f"{conditional['total']} hours"
+        conditional_night = conditional.get("night")
+        if conditional_night is not None and conditional_night != s.get("night"):
+            value += f", including {conditional_night} at night"
         rows.append(
             (
                 f"If {condition}",
-                f"{conditional['total']} hours",
+                value,
             )
         )
     if s.get("night"):
@@ -182,6 +347,13 @@ def requirement_rows(s: dict) -> str:
         rows.append(("Permit must be held", f"{s['permit_months']} months"))
     elif s.get("permit_days"):
         rows.append(("Permit must be held", f"{s['permit_days']} days"))
+    if s.get("permit_days_without_school"):
+        rows.append(
+            (
+                "Permit without driver school",
+                f"{s['permit_days_without_school']} days",
+            )
+        )
     if s.get("min_days"):
         rows.append(("Practice on at least", f"{s['min_days']} different days"))
     if s.get("daily_cap"):
@@ -210,9 +382,61 @@ def requirement_rows(s: dict) -> str:
         )
     if s.get("digital_accepted"):
         rows.append(("Log copy accepted", "digital or printed"))
+    if s.get("signature"):
+        signature = {
+            "single_certification": "one final certification",
+            "per_entry": "a signature on each entry",
+            "notarized": "a notarized certification",
+        }.get(s["signature"], humanize(s["signature"]))
+        rows.append(("Proof/signature model", signature))
     return "\n".join(
         f"      <tr><th scope=\"row\">{esc(k)}</th><td>{esc(v)}</td></tr>" for k, v in rows
     )
+
+
+def special_rules(s: dict) -> str:
+    sections: list[str] = []
+    milestones = s.get("milestone", {})
+    if milestones:
+        items = "".join(
+            f"<li>{esc(details['note'])}</li>"
+            for details in milestones.values()
+            if details.get("note")
+        )
+        if items:
+            sections.append(f"<h3>Stage-by-stage totals</h3><ul>{items}</ul>")
+
+    categories = s.get("categories", [])
+    if categories:
+        items = "".join(
+            f"<li>{esc(category['hours'])} hours in "
+            f"{esc(humanize(category['name']))}</li>"
+            for category in categories
+            if category.get("name") and category.get("hours") is not None
+        )
+        if items:
+            sections.append(f"<h3>Required conditions</h3><ul>{items}</ul>")
+
+    conditions = s.get("required_conditions", [])
+    if conditions:
+        readable = ", ".join(humanize(condition) for condition in conditions)
+        sections.append(
+            "<p><strong>Practice conditions to include:</strong> "
+            f"{esc(readable)}.</p>"
+        )
+
+    alternative = s.get("alternative_requirement")
+    if alternative:
+        note = alternative.get("note") or alternative["condition"]
+        sections.append(f"<p><strong>Alternative path:</strong> {esc(note)}</p>")
+
+    if s.get("age_eighteen_path"):
+        sections.append(
+            f"<p><strong>Age 18 path:</strong> {esc(s['age_eighteen_path'])}</p>"
+        )
+    if s.get("adult_path"):
+        sections.append(f"<p><strong>Adult path:</strong> {esc(s['adult_path'])}</p>")
+    return "\n".join(sections)
 
 
 def sources_block(s: dict, verified_on: str) -> str:
@@ -273,6 +497,13 @@ STYLE = """
     .fineprint, .sources, .disclaimer { font-size: 14px; color: #4a5a5f; }
     .disclaimer { border-top: 1px solid #d8e2e4; margin-top: 3em; padding-top: 1em; }
     nav { font-size: 15px; margin-bottom: 2em; }
+    .guide-search { display: block; margin: 1.5em 0; }
+    .guide-search span { display: block; font-weight: 600; margin-bottom: .4em; }
+    .guide-search input { box-sizing: border-box; width: 100%; padding: 12px 14px; border: 1px solid #b7c7ca; border-radius: 10px; font: inherit; }
+    .guide-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; padding: 0; }
+    .guide-grid li { list-style: none; border: 1px solid #d8e2e4; border-radius: 12px; background: #f8fbfb; }
+    .guide-grid a { display: block; padding: 13px 15px; font-weight: 600; text-decoration: none; }
+    .comparison-card { margin-top: 2em; padding: 16px 18px; border-left: 4px solid #0f5963; background: #f1f7f7; }
 """
 
 STATE_DISCLAIMER = (
@@ -322,16 +553,22 @@ def page_shell(
 
 def state_page(code: str, s: dict, verified_on: str) -> tuple[str, str, str]:
     name = s["name"]
-    slug = SLUGS[code]
+    slug = slug_for(code, name)
     total = target_hours(s)
     night = s.get("night")
-    title = f"{name} supervised driving: {total}"
-    description = (
-        f"Understand {name}'s supervised practice requirements ({total})"
-        + (f", {night} at night" if night else "")
-        + ". See what counts, which form to use, and how to keep a record "
-        f"that holds up — checked against official {name} sources."
-    )
+    if s.get("no_hour_requirement"):
+        title = f"{name} learner permit practice requirements"
+        description = (
+            f"{name} learner-permit practice rules, eligibility steps and official sources. "
+            "Learn what to record when the cited GDL source sets no hour minimum."
+        )
+    else:
+        title = f"{name} supervised driving: {total}"
+        description = (
+            f"{name} supervised driving rules: {total}"
+            + (f"; {night} at night" if night else "")
+            + ". Check permit timing, credited limits, log paperwork and official state sources."
+        )
     canonical = f"{BASE_URL}/guides/{slug}.html"
 
     extras = ""
@@ -346,7 +583,14 @@ def state_page(code: str, s: dict, verified_on: str) -> tuple[str, str, str]:
     form_bits = [f"<strong>{esc(s['output'])}</strong>"] if s.get("output") else []
     if s.get("signer_note"):
         form_bits.append(esc(s["signer_note"]))
-    form_para = f"<p>{' — '.join(form_bits)}</p>" if form_bits else ""
+    form_para = (
+        f"<p>{' — '.join(form_bits)}</p>"
+        if form_bits
+        else (
+            "<p>The verified data does not name a separate state log form. Follow the "
+            "official source below for the current proof and application instructions.</p>"
+        )
+    )
 
     required_fields = ""
     if s.get("required_fields"):
@@ -356,14 +600,20 @@ def state_page(code: str, s: dict, verified_on: str) -> tuple[str, str, str]:
             f"<ul>{items}</ul>"
         )
 
-    body = f"""  <h1>{esc(name)}: supervised driving hours, explained</h1>
-  <p>{EDITORIAL[code]}</p>
+    heading = (
+        f"{name}: learner permit practice requirements"
+        if s.get("no_hour_requirement")
+        else f"{name}: supervised driving hours, explained"
+    )
+    body = f"""  <h1>{esc(heading)}</h1>
+  <p>{editorial_paragraph(s)}</p>
 
   <h2>The requirement at a glance</h2>
   <table>
 {requirement_rows(s)}
   </table>
 {curfew}
+{special_rules(s)}
 
   <h2>The paperwork</h2>
 {form_para}
@@ -373,9 +623,9 @@ def state_page(code: str, s: dict, verified_on: str) -> tuple[str, str, str]:
 {extras}
 
   <h2>How Driving Log helps in {esc(name)}</h2>
-  <p>Driving Log tracks each drive with its day and night minutes and shows two numbers side by
-  side: the time you drove and the time that <em>counts</em> under {esc(name)}'s rules — with the
-  reason whenever they differ. The core app is free, keeps everything on your device and private
+  <p>Driving Log tracks each drive with its day and night minutes and, where {esc(name)} sets a
+  numeric target, shows the time you drove beside the time that <em>counts</em> under the configured
+  rules — with the reason whenever they differ. The core app is free, keeps everything on your device and private
   iCloud, and needs no account. A printable record of every entry is included; sourced worksheet
   layouts for several states are part of the one-time Pro upgrade.</p>
 {cta_block(name, f"guide-{code.lower()}")}"""
@@ -387,9 +637,8 @@ def comparison_page(verified_on: str) -> tuple[str, str, str]:
     slug = "roadready-alternative"
     title = "Looking for a RoadReady alternative? An honest comparison"
     description = (
-        "How Driving Log compares with RoadReady for tracking supervised driving hours: "
-        "accounts, privacy, what counts toward your state requirement, and how to move an "
-        "existing CSV driving log."
+        "Compare Driving Log with RoadReady for supervised driving: accounts, privacy, "
+        "state-aware totals, pricing and importing an existing CSV log."
     )
     canonical = f"{BASE_URL}/guides/{slug}.html"
     body = f"""  <h1>Looking for a RoadReady alternative?</h1>
@@ -436,13 +685,32 @@ def comparison_page(verified_on: str) -> tuple[str, str, str]:
 
 
 def index_page(entries: list[tuple[str, str]]) -> str:
+    comparison = next(entry for entry in entries if entry[0] == "roadready-alternative")
+    state_entries = [entry for entry in entries if entry[0] != "roadready-alternative"]
     items = "".join(
-        f'<li><a href="/guides/{slug}.html">{esc(title)}</a></li>' for slug, title in entries
+        f'<li data-guide><a href="/guides/{slug}.html">{esc(title)}</a></li>'
+        for slug, title in sorted(state_entries, key=lambda entry: entry[1])
     )
     body = f"""  <h1>State guides</h1>
-  <p>Supervised-driving requirements for learner drivers, summarised from official state
-  sources with the verification date on every page.</p>
-  <ul>{items}</ul>"""
+  <p>Supervised-driving requirements for learner drivers in all 50 states and Washington, DC,
+  summarised from official state sources with the verification date on every page.</p>
+  <label class="guide-search"><span>Find your state</span>
+    <input type="search" id="guide-filter" placeholder="Start typing a state name"
+      autocomplete="off">
+  </label>
+  <ul class="guide-grid" id="guide-list">{items}</ul>
+  <p class="comparison-card"><strong>Switching from another log?</strong><br>
+    <a href="/guides/{comparison[0]}.html">{esc(comparison[1])}</a></p>
+  <script>
+    const filter = document.getElementById('guide-filter');
+    const guides = [...document.querySelectorAll('[data-guide]')];
+    filter.addEventListener('input', () => {{
+      const query = filter.value.trim().toLowerCase();
+      guides.forEach(item => {{
+        item.hidden = !item.textContent.toLowerCase().includes(query);
+      }});
+    }});
+  </script>"""
     return page_shell(
         "Supervised driving hour requirements by state",
         "State-by-state supervised driving hour requirements for learner permits, "
@@ -456,8 +724,8 @@ def main() -> None:
     states, verified_on = load_states()
     OUT_DIR.mkdir(exist_ok=True)
     entries = []
-    for code in PILOT:
-        slug, html_text, title = state_page(code, states[code], verified_on)
+    for code, state in states.items():
+        slug, html_text, title = state_page(code, state, verified_on)
         (OUT_DIR / f"{slug}.html").write_text(html_text, encoding="utf-8")
         entries.append((slug, title))
     slug, html_text, title = comparison_page(verified_on)

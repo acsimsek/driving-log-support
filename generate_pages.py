@@ -510,7 +510,7 @@ def cta_block(state_name: str | None, campaign: str) -> str:
     return f"""
   <div class="cta-panel">
     <h2>Keep the log{where} with Driving Log</h2>
-    <p>Free for one learner, no account, nothing collected. Every drive is stored on your iPhone and in your own private iCloud.</p>
+    <p>Free for one learner, no account, nothing collected. Every drive is stored on your iPhone and, when enabled, in your own private iCloud.</p>
     <div class="btn-row">
       <a class="btn" href="{esc(campaign_url(campaign))}">Download free for iPhone</a>
       <a class="btn secondary" href="{esc(mailto)}">Android — join the waitlist</a>

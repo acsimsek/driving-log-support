@@ -123,6 +123,20 @@ class GuideGeneratorTests(unittest.TestCase):
         block = pages.cta_block("California", "guide-ca")
         self.assertIn("pt=129248493&amp;ct=guide-ca&amp;mt=8", block)
 
+    def test_cta_describes_icloud_as_optional(self):
+        block = pages.cta_block("California", "guide-ca")
+        self.assertIn("when enabled", block)
+        self.assertNotIn("stored on your iPhone and in your own private iCloud", block)
+
+    def test_homepage_has_main_landmark_and_avoids_absolute_claims(self):
+        homepage = (pathlib.Path(__file__).parent / "index.html").read_text(encoding="utf-8")
+        self.assertEqual(homepage.count("<main>"), 1)
+        self.assertEqual(homepage.count("</main>"), 1)
+        self.assertNotIn("see exactly what counts", homepage)
+        self.assertNotIn("the total that will hold up", homepage)
+        self.assertNotIn("If the other app can export a CSV file", homepage)
+        self.assertIn("supported rows from a CSV file", homepage)
+
     def test_unverified_state_blocks_build(self):
         data = copy.deepcopy(self.raw)
         next(state for state in data["states"] if state["code"] == "CA")["status"] = "draft"

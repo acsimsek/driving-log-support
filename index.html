@@ -51,7 +51,8 @@
   <main>
   <section class="hero">
     <div class="wrap">
-      <div>
+      <div class="hero-copy">
+        <p class="eyebrow">Built for learner drivers and their families</p>
         <h1>Supervised driving hours, without the guesswork.</h1>
         <p class="lede">Log every practice drive, see how your time counts under the rules configured for your state, and print a supporting record when it's time to apply.</p>
         <ul class="badges">
@@ -65,7 +66,20 @@
           <a class="btn secondary" href="/guides/">Check your state's rules</a>
         </div>
       </div>
-      <div class="phone"><img src="/assets/dashboard.png" alt="Driving Log dashboard showing a learner's progress toward 50 supervised hours" width="640" height="1440"></div>
+      <div class="hero-visual" aria-label="Driving Log app previews">
+        <div class="glow" aria-hidden="true"></div>
+        <div class="phone phone-main"><picture><source srcset="/assets/dashboard.webp" type="image/webp"><img src="/assets/dashboard.png" alt="Driving Log dashboard showing a learner's supervised-driving progress" width="720" height="1564"></picture></div>
+        <div class="phone phone-float"><picture><source srcset="/assets/pro.webp" type="image/webp"><img src="/assets/pro.png" alt="Driving Log Pro screen showing the one-time purchase and included family features" width="720" height="1564"></picture></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="trust-strip" aria-label="Key app facts">
+    <div class="wrap">
+      <div><strong>51</strong><span>jurisdictions</span></div>
+      <div><strong>$0</strong><span>for core logging</span></div>
+      <div><strong>0</strong><span>ads or trackers</span></div>
+      <div><strong>1×</strong><span>optional Pro purchase</span></div>
     </div>
   </section>
 
@@ -85,7 +99,7 @@
 
   <section class="section alt">
     <div class="wrap split">
-      <div class="phone"><img src="/assets/progress.png" alt="Progress screen listing logged time, counted time and remaining requirements for California" width="640" height="1440" loading="lazy"></div>
+      <div class="phone"><picture><source srcset="/assets/progress.webp" type="image/webp"><img src="/assets/progress.png" alt="Progress screen listing logged time, counted time and remaining requirements for California" width="720" height="1564" loading="lazy"></picture></div>
       <div>
         <h2>Know what may count before you apply</h2>
         <p class="muted">Some states cap how many hours count per day or per week. Others need a minimum number of practice days, or hours in particular conditions. Driving Log applies the configured rules as you go, helping you spot caps, remaining requirements and possible gaps before you apply.</p>
@@ -95,6 +109,30 @@
           <li>Permit holding period counted from the date it was issued</li>
           <li>Every rule linked to the official state page it came from</li>
         </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section product-tour" aria-labelledby="inside-app">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Designed for the whole journey</p>
+        <h2 id="inside-app">Clear at a glance. Detailed when it matters.</h2>
+        <p>Start a drive in one tap, add the details your state needs, and always know what remains.</p>
+      </div>
+      <div class="screen-grid">
+        <article class="screen-card day">
+          <div><span>01</span><h3>Log the drive</h3><p>Choose exact day and night minutes, road conditions and instruction details.</p></div>
+          <div class="phone"><picture><source srcset="/assets/add-drive.webp" type="image/webp"><img src="/assets/add-drive.png" alt="Add Drive screen with time, night-driving and road-condition controls" width="720" height="1564" loading="lazy"></picture></div>
+        </article>
+        <article class="screen-card night">
+          <div><span>02</span><h3>See real progress</h3><p>Logged time and state-counted time stay separate, with remaining requirements made visible.</p></div>
+          <div class="phone"><picture><source srcset="/assets/progress.webp" type="image/webp"><img src="/assets/progress.png" alt="State progress screen with counted time and remaining requirements" width="720" height="1564" loading="lazy"></picture></div>
+        </article>
+        <article class="screen-card pro-card">
+          <div><span>03</span><h3>Bring the family</h3><p>Pro adds separate learners, private collaboration, CSV import and supported worksheets.</p></div>
+          <div class="phone"><picture><source srcset="/assets/pro.webp" type="image/webp"><img src="/assets/pro.png" alt="Driving Log Pro benefits and one-time purchase screen" width="720" height="1564" loading="lazy"></picture></div>
+        </article>
       </div>
     </div>
   </section>

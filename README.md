@@ -32,3 +32,19 @@ fields that must never be published.
   campaign after at least five individual Apple Accounts install through its link.
 - The Android waitlist is a mailto to support@acsimsek.com by design: the site itself collects
   nothing, so the privacy page stays honest. Waitlist volume is measured in the inbox.
+
+## Refreshing product screenshots
+
+The homepage uses real simulator captures from the iOS repository, not hand-built mockups. After
+an app UI change, run `./scripts/capture-app-store-screenshots.sh` in `../driving-log-ios`, then
+replace and resize these source files to 720 pixels wide and generate matching WebP files:
+
+- `01-dashboard.png` -> `assets/dashboard.png`
+- `02-progress-details.png` -> `assets/progress.png`
+- `03-driving-log-pro.png` -> `assets/pro.png`
+- `04-add-a-drive.png` -> `assets/add-drive.png`
+
+The PNG sources live under
+`../driving-log-ios/app-store/screenshots/raw/en-US/6.9-inch/`. Keep the homepage image dimensions
+and alt text in sync when the captures change, compress each PNG to the same-named `.webp` file,
+then run the site tests before publishing. The PNG remains the compatibility fallback.

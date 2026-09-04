@@ -137,6 +137,24 @@ class GuideGeneratorTests(unittest.TestCase):
         self.assertNotIn("If the other app can export a CSV file", homepage)
         self.assertIn("supported rows from a CSV file", homepage)
 
+    def test_homepage_product_tour_uses_real_local_app_captures(self):
+        repo = pathlib.Path(__file__).parent
+        homepage = (repo / "index.html").read_text(encoding="utf-8")
+        expected_assets = {
+            "dashboard.png",
+            "progress.png",
+            "add-drive.png",
+            "pro.png",
+        }
+        for asset in expected_assets:
+            self.assertIn(f'/assets/{asset}', homepage)
+            self.assertTrue((repo / "assets" / asset).is_file())
+            webp_asset = pathlib.Path(asset).with_suffix(".webp")
+            self.assertIn(f'/assets/{webp_asset}', homepage)
+            self.assertTrue((repo / "assets" / webp_asset).is_file())
+        self.assertIn('aria-labelledby="inside-app"', homepage)
+        self.assertEqual(homepage.count('class="screen-card'), 3)
+
     def test_unverified_state_blocks_build(self):
         data = copy.deepcopy(self.raw)
         next(state for state in data["states"] if state["code"] == "CA")["status"] = "draft"

@@ -704,8 +704,7 @@ def comparison_page(verified_on: str) -> tuple[str, str, str]:
   <table>
       <tr><th scope="row">Account</th><td>None. No sign-up, no login. Your log lives on your
       device and in your private iCloud.</td></tr>
-      <tr><th scope="row">Privacy label</th><td>&ldquo;Data Not Collected&rdquo; on the App
-      Store: no analytics, no ads, no tracking SDKs.</td></tr>
+      <tr><th scope="row">Privacy</th><td>No ads or cross-app tracking. Version 1.3 adds optional basic usage analytics, off by default; driving records are never included.</td></tr>
       <tr><th scope="row">What counts vs. what you drove</th><td>Both numbers are shown side by
       side, with the reason whenever they differ — daily caps, night rules, permit dates. The
       state rule is cited from its official source, last verified {esc(verified_on)}.</td></tr>

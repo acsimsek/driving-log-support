@@ -739,6 +739,203 @@ def comparison_page(verified_on: str) -> tuple[str, str, str]:
     return slug, page_shell(title, description, canonical, body), title
 
 
+# Hand-written, evergreen-ish content pages. Numbers that describe our own app come from states.json
+# (via the state dict); numbers about other apps are dated and labelled as observed on that day.
+COMPETITOR_SNAPSHOT_DATE = "2026-09-17"
+COMPETITORS = [
+    # name, rating, count, price model, platforms, note
+    ("RoadReady (Safe Roads Alliance)", "2.6", "16,200", "Free", "iPhone, Android",
+     "Distributed through several state DMV parent programs. Reviews after the July 2026 rebuild "
+     "describe login loops and lost hours; export a copy regularly whatever you use."),
+    ("Student Driving Logger", "4.7", "5,900", "Free with ads; one-time ad removal", "iPhone",
+     "GPS-based; some reviews mention distance errors and crashes while driving."),
+    ("GoTime – Teen Driving Log", "4.8", "130", "Free", "iPhone", "Launched February 2026."),
+    ("Student Driving Log", "4.8", "130", "Free", "iPhone", "Simple manual log."),
+    ("DMV Driving Hours Log", "4.8", "20", "One-time purchase", "iPhone, Android",
+     "Automatic night hours from sunset times."),
+    ("Moda: Driving Permit Hours Log", "4.8", "17", "Free", "iPhone", "CarPlay and Siri start."),
+    ("NSC DriveitHOME", "—", "—", "Free", "iPhone, Android",
+     "From the National Safety Council; lesson ideas alongside the log."),
+    ("Driving Log: Supervised Hours (this site)", "no ratings yet", "0", "Free; one-time Pro",
+     "iPhone", "No account; both parents log into one private iCloud record; rule citations for "
+     "all 51 jurisdictions; signed printable record included free."),
+]
+
+
+def comparison_hub_page(verified_on: str) -> tuple[str, str, str]:
+    slug = "best-driving-log-apps-permit-hours"
+    title = "Best driving log apps for permit hours (2026)"
+    description = (
+        "An honest comparison of iPhone apps that track supervised driving hours for a learner "
+        "permit: ratings, price, platforms and what each one does differently."
+    )
+    canonical = f"{BASE_URL}/guides/{slug}.html"
+    rows = "".join(
+        f"<tr><th scope=\"row\">{esc(n)}</th><td>{esc(r)} ({esc(c)})</td><td>{esc(pr)}</td>"
+        f"<td>{esc(pl)}</td><td>{esc(note)}</td></tr>"
+        for n, r, c, pr, pl, note in COMPETITORS
+    )
+    body = f"""  <section class="guide-hero">
+    <div class="wrap narrow">
+      <p class="crumbs"><a href="/">Driving Log</a> › <a href="/guides/">State guides</a> › Best apps</p>
+      <h1>Best driving log apps for permit hours</h1>
+      <p class="lede">Written by the developer of one of the apps below, so read it as a map, not a verdict.
+      Ratings and prices were read from the App Store on {esc(COMPETITOR_SNAPSHOT_DATE)} and change daily.</p>
+    </div>
+  </section>
+  <main class="wrap narrow prose">
+  <div class="callout"><strong>Disclosure.</strong> This site belongs to Driving Log, the last row in the table.
+  Every other line is what the public App Store page showed on {esc(COMPETITOR_SNAPSHOT_DATE)}; we have not
+  tested each competitor's export against a DMV counter, and none of the apps below, ours included,
+  produces an official state form.</div>
+
+  <h2>What to check before choosing any app</h2>
+  <ul>
+    <li><strong>Does it apply your state's rule?</strong> Texas credits at most 2 hours a day; North Carolina caps hours per week; Florida wants a notarized certification at the end. A running total alone can mislead you.</li>
+    <li><strong>Can you get your data out?</strong> Whatever you use, export or print every few weeks. Several apps had update bugs this summer that lost hours.</li>
+    <li><strong>Does your state accept a printout at all?</strong> Minnesota only accepts its own DVS form and Nevada only its DLD-130 form or the RoadReady app. In those states an app is a helper, not the paperwork.</li>
+    <li><strong>Who else needs to log?</strong> If two parents supervise, check whether both can write to one record without sharing a password.</li>
+  </ul>
+
+  <h2>The apps side by side</h2>
+  <table>
+    <tr><th scope="col">App</th><th scope="col">Rating (count)</th><th scope="col">Price</th><th scope="col">Platforms</th><th scope="col">Notes</th></tr>
+    {rows}
+  </table>
+
+  <h2>Where Driving Log fits</h2>
+  <p>Driving Log is the newest entry in the list and has no ratings yet. What it does differently: there is no
+  account, the record lives on your iPhone and in your own private iCloud, both parents can contribute to one
+  log, every state rule links to the official page it came from (last verified {esc(verified_on)}), and the
+  printable record with a signature block is free. The one-time Pro purchase adds extra learners, family
+  collaboration and CSV import. It is iPhone-only today.</p>
+  <p>If RoadReady or a state program already works for your family, keep using it. This page exists so you can
+  compare on facts, and the <a href="/guides/roadready-alternative.html">RoadReady comparison</a> goes deeper on that one.</p>
+{cta_block(None, "compare-best-apps")}
+  <p class="state-nav"><a href="/guides/">← All state guides</a></p>
+  </main>"""
+    return slug, page_shell(title, description, canonical, body), title
+
+
+def texas_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
+    slug = "texas-30-hour-log-what-counts"
+    title = "Texas 30-hour driving log: what actually counts"
+    description = (
+        "How the Texas 30-hour behind-the-wheel log works: the 2-hour daily cap, 10 night hours, "
+        "30 separate days, the 6-month permit period and TDLR form DES150N, explained for parents."
+    )
+    canonical = f"{BASE_URL}/guides/{slug}.html"
+    body = f"""  <section class="guide-hero">
+    <div class="wrap narrow">
+      <p class="crumbs"><a href="/">Driving Log</a> › <a href="/guides/">State guides</a> › Texas 30-hour log</p>
+      <h1>Texas 30-hour driving log: what actually counts</h1>
+      <p class="lede">Checked against TDLR's form and guide on {esc(verified_on)}.</p>
+      <div class="stats">{stat_cards(s)}</div>
+    </div>
+  </section>
+  <main class="wrap narrow prose">
+  <div class="callout">Most Texas families find out late that <strong>only {esc(s["daily_cap"])} hours per day</strong>
+  count toward the {esc(s["total"])}. A four-hour road trip is good practice, but it credits two hours on the
+  log. Spread practice across at least {esc(s["min_days"])} different days.</div>
+
+  <h2>The five numbers</h2>
+  <table>
+    <tr><th scope="row">Supervised practice</th><td>{esc(s["total"])} hours, of which {esc(s["night"])} at night</td></tr>
+    <tr><th scope="row">Daily credit cap</th><td>{esc(s["daily_cap"])} hours per day</td></tr>
+    <tr><th scope="row">Separate practice days</th><td>at least {esc(s["min_days"])}</td></tr>
+    <tr><th scope="row">Learner license held</th><td>at least {esc(s["permit_months"])} months</td></tr>
+    <tr><th scope="row">Supervising adult</th><td>age {esc(s["supervisor_min_age"])}+, licensed {esc(s["supervisor_min_license_years"])}+ years, signs each entry</td></tr>
+  </table>
+
+  <h2>The 30 hours are not the whole in-car requirement</h2>
+  <p>The 30-hour log covers supervised practice. Texas driver education also has an in-car phase of 7 hours
+  behind the wheel plus 7 hours of in-car observation with the instructor, and in parent-taught driver
+  education (PTDE) the parent instructor is that instructor. Provider guides describe the combined
+  requirement as 44 hours; the log form itself covers the 30. Confirm the current split with your course
+  provider and the TDLR guide linked below.</p>
+
+  <h2>The form: {esc(s["output"])}</h2>
+  <p>{esc(s["signer_note"])}</p>
+  <p>Fields the form asks for: {esc(", ".join(s["required_fields"]))}. Keep the date, the am/pm time and the
+  day/night split for every drive as you go; reconstructing them at the end is where logs get rejected.</p>
+
+  <h2>What an app should do for Texas</h2>
+  <ul>
+    <li>Apply the {esc(s["daily_cap"])}-hour daily cap automatically and show both the time you drove and the time that counts.</li>
+    <li>Keep night minutes separate from day minutes.</li>
+    <li>Count distinct practice days toward the {esc(s["min_days"])}-day minimum.</li>
+    <li>Print a dated record you can copy onto, or attach to, the TDLR form. No app produces the official form itself.</li>
+  </ul>
+  <p>Driving Log does these four things for Texas and links the rule to its source. The full rule summary is on the
+  <a href="/guides/texas-behind-the-wheel-hours.html">Texas guide</a>.</p>
+{sources_block(s, verified_on)}
+{cta_block("Texas", "guide-tx-deep")}
+  <p class="state-nav"><a href="/guides/texas-behind-the-wheel-hours.html">← Texas guide</a><a href="/guides/">All state guides →</a></p>
+  </main>"""
+    return slug, page_shell(title, description, canonical, body, STATE_DISCLAIMER), title
+
+
+def florida_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
+    slug = "florida-50-hour-log-notarized-certification"
+    title = "Florida 50-hour driving log and the notarized certification"
+    description = (
+        "Florida learner's license practice: 50 supervised hours with 10 at night, daylight-only "
+        "driving for the first 3 months, and the certification signed before a notary or examiner."
+    )
+    canonical = f"{BASE_URL}/guides/{slug}.html"
+    body = f"""  <section class="guide-hero">
+    <div class="wrap narrow">
+      <p class="crumbs"><a href="/">Driving Log</a> › <a href="/guides/">State guides</a> › Florida 50-hour log</p>
+      <h1>Florida 50-hour driving log and the notarized certification</h1>
+      <p class="lede">Checked against FLHSMV's driving log on {esc(verified_on)}.</p>
+      <div class="stats">{stat_cards(s)}</div>
+    </div>
+  </section>
+  <main class="wrap narrow prose">
+  <div class="callout">Florida's certification is <strong>sworn</strong>: the {esc(s["total"])} hours are attested before a
+  notary or a license examiner. That is why the day/night split matters from the first drive; the number you
+  swear to should be one you can back up with dated entries.</div>
+
+  <h2>The rule in three lines</h2>
+  <table>
+    <tr><th scope="row">Supervised practice</th><td>{esc(s["total"])} hours, of which {esc(s["night"])} at night</td></tr>
+    <tr><th scope="row">Learner license window</th><td>daylight only for the first {esc(s["night_blackout_months"])} months, so night hours come later in the year</td></tr>
+    <tr><th scope="row">Supervising adult</th><td>age {esc(s["supervisor_min_age"])}+</td></tr>
+  </table>
+
+  <h2>The paperwork: {esc(s["output"])}</h2>
+  <p>The state's own log sheet classifies each drive simply as day or night. Keep that split as you go, print
+  the log, and bring it with the certification form to be signed in front of the notary or examiner. The
+  printout from an app is a supporting record; the sworn certification is what the state accepts.</p>
+
+  <h2>Planning the night hours</h2>
+  <p>Because the first {esc(s["night_blackout_months"])} months are daylight-only, families who start in spring often reach 40 daytime
+  hours quickly and then stall on the {esc(s["night"])} night hours. Put a few evening drives on the calendar as soon as the
+  daylight-only period ends.</p>
+
+  <h2>What an app should do for Florida</h2>
+  <ul>
+    <li>Keep night minutes separate and show how many of the {esc(s["night"])} remain.</li>
+    <li>Warn about night entries dated inside the daylight-only window.</li>
+    <li>Print a dated record you can attach to the certification. No app produces the official form.</li>
+  </ul>
+  <p>Driving Log does these for Florida and links the rule to its source. See the
+  <a href="/guides/florida-learners-permit-driving-hours.html">Florida guide</a> for the full summary.</p>
+{sources_block(s, verified_on)}
+{cta_block("Florida", "guide-fl-deep")}
+  <p class="state-nav"><a href="/guides/florida-learners-permit-driving-hours.html">← Florida guide</a><a href="/guides/">All state guides →</a></p>
+  </main>"""
+    return slug, page_shell(title, description, canonical, body, STATE_DISCLAIMER), title
+
+
+def content_pages(states: dict, verified_on: str) -> list[tuple[str, str, str]]:
+    return [
+        comparison_hub_page(verified_on),
+        texas_deep_page(states["TX"], verified_on),
+        florida_deep_page(states["FL"], verified_on),
+    ]
+
+
 def index_page(entries: list[tuple[str, str, str]], verified_on: str) -> str:
     comparison = next(entry for entry in entries if entry[0] == "roadready-alternative")
     state_entries = [entry for entry in entries if entry[0] != "roadready-alternative"]
@@ -761,7 +958,8 @@ def index_page(entries: list[tuple[str, str, str]], verified_on: str) -> str:
     <input type="search" id="guide-filter" placeholder="Start typing a state name…" autocomplete="off">
     <ul class="guide-grid" id="guide-list">{items}</ul>
   </div>
-  <div class="callout" style="margin-top:28px"><strong>Switching from another log?</strong>
+  <div class="callout" style="margin-top:28px"><strong>Choosing or switching apps?</strong>
+    <a href="/guides/best-driving-log-apps-permit-hours.html">Best driving log apps for permit hours (2026)</a> ·
     <a href="/guides/{comparison[0]}.html">{esc(comparison[1])}</a></div>
   </main>
   <script>
@@ -794,6 +992,10 @@ def main() -> None:
     slug, html_text, title = comparison_page(verified_on)
     (OUT_DIR / f"{slug}.html").write_text(html_text, encoding="utf-8")
     entries.append((slug, title, ""))
+    content_urls = []
+    for slug, html_text, _ in content_pages(states, verified_on):
+        (OUT_DIR / f"{slug}.html").write_text(html_text, encoding="utf-8")
+        content_urls.append(f"{BASE_URL}/guides/{slug}.html")
     (OUT_DIR / "index.html").write_text(index_page(entries, verified_on), encoding="utf-8")
 
     urls = [
@@ -803,7 +1005,7 @@ def main() -> None:
         f"{BASE_URL}/guides/",
     ] + [
         f"{BASE_URL}/guides/{entry[0]}.html" for entry in entries
-    ]
+    ] + content_urls
     sitemap = "\n".join(
         ['<?xml version="1.0" encoding="UTF-8"?>',
          '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
@@ -814,7 +1016,7 @@ def main() -> None:
     (REPO / "robots.txt").write_text(
         f"User-agent: *\nAllow: /\nSitemap: {BASE_URL}/sitemap.xml\n", encoding="utf-8"
     )
-    print(f"Generated {len(entries)} guide pages + index + sitemap (rules verified {verified_on}).")
+    print(f"Generated {len(entries)} guide pages + {len(content_urls)} content pages + index + sitemap (rules verified {verified_on}).")
 
 
 if __name__ == "__main__":

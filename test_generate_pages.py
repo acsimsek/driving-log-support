@@ -155,6 +155,24 @@ class GuideGeneratorTests(unittest.TestCase):
         self.assertIn('aria-labelledby="inside-app"', homepage)
         self.assertEqual(homepage.count('class="screen-card'), 3)
 
+
+    def test_content_pages_keep_claims_honest(self):
+        for slug, page, title in pages.content_pages(self.states, self.verified_on):
+            self.assertLessEqual(len(title), 70)
+            self.assertNotIn("DMV approved", page)
+            self.assertNotIn("DMV-approved", page)
+            self.assertIn("not legal advice", page)
+            self.assertIn("ct=", page)
+        _, comparison, _ = pages.comparison_hub_page(self.verified_on)
+        self.assertIn("Disclosure", comparison)
+        self.assertIn(pages.COMPETITOR_SNAPSHOT_DATE, comparison)
+        _, texas, _ = pages.texas_deep_page(self.states["TX"], self.verified_on)
+        self.assertIn("2 hours per day", texas)
+        self.assertIn("DES150N", texas)
+        _, florida, _ = pages.florida_deep_page(self.states["FL"], self.verified_on)
+        self.assertIn("notary", florida)
+        self.assertIn("first 3 months", florida)
+
     def test_unverified_state_blocks_build(self):
         data = copy.deepcopy(self.raw)
         next(state for state in data["states"] if state["code"] == "CA")["status"] = "draft"

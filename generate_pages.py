@@ -756,7 +756,7 @@ COMPETITORS = [
     ("Moda: Driving Permit Hours Log", "4.8", "17", "Free", "iPhone", "CarPlay and Siri start."),
     ("NSC DriveitHOME", "—", "—", "Free", "iPhone, Android",
      "From the National Safety Council; lesson ideas alongside the log."),
-    ("Driving Log: Supervised Hours (this site)", "no ratings yet", "0", "Free; one-time Pro",
+    ("Driving Log: Supervised Hours (this site)", "—", "no", "Free; one-time Pro",
      "iPhone", "No account; both parents log into one private iCloud record; rule citations for "
      "all 51 jurisdictions; signed printable record included free."),
 ]
@@ -771,8 +771,9 @@ def comparison_hub_page(verified_on: str) -> tuple[str, str, str]:
     )
     canonical = f"{BASE_URL}/guides/{slug}.html"
     rows = "".join(
-        f"<tr><th scope=\"row\">{esc(n)}</th><td>{esc(r)} ({esc(c)})</td><td>{esc(pr)}</td>"
-        f"<td>{esc(pl)}</td><td>{esc(note)}</td></tr>"
+        f'<div class="card"><h3>{esc(n)}</h3>'
+        f'<p class="muted">{esc(r)} ★ · {esc(c)} ratings · {esc(pr)} · {esc(pl)}</p>'
+        f"<p>{esc(note)}</p></div>"
         for n, r, c, pr, pl, note in COMPETITORS
     )
     body = f"""  <section class="guide-hero">
@@ -798,10 +799,9 @@ def comparison_hub_page(verified_on: str) -> tuple[str, str, str]:
   </ul>
 
   <h2>The apps side by side</h2>
-  <table>
-    <tr><th scope="col">App</th><th scope="col">Rating (count)</th><th scope="col">Price</th><th scope="col">Platforms</th><th scope="col">Notes</th></tr>
+  <div class="cards">
     {rows}
-  </table>
+  </div>
 
   <h2>Where Driving Log fits</h2>
   <p>Driving Log is the newest entry in the list and has no ratings yet. What it does differently: there is no

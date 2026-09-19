@@ -173,6 +173,38 @@ class GuideGeneratorTests(unittest.TestCase):
         self.assertIn("notary", florida)
         self.assertIn("first 3 months", florida)
 
+
+    def test_state_pages_lead_with_the_answer_and_ask_real_questions(self):
+        _, texas, _ = pages.state_page("TX", self.states["TX"], self.verified_on, self.states)
+        self.assertIn("How many supervised driving hours does Texas require?", texas)
+        self.assertIn("Texas requires 30 hours of supervised practice", texas)
+        self.assertIn("at most 2 hours count on any one day", texas)
+        self.assertIn("Can you log all the hours in a few long days in Texas?", texas)
+        self.assertIn("application/ld+json", texas)
+        self.assertIn('"@type": "FAQPage"', texas)
+
+        _, arkansas, _ = pages.state_page("AR", self.states["AR"], self.verified_on, self.states)
+        self.assertIn("What does the Arkansas learner permit require?", arkansas)
+        self.assertIn("does not set a numeric supervised-practice minimum", arkansas)
+
+    def test_faq_schema_matches_the_visible_questions(self):
+        for code in ("CA", "TX", "NC", "MN"):
+            state = self.states[code]
+            visible, schema = pages.faq_block(state)
+            self.assertTrue(visible and schema)
+            payload = json.loads(
+                schema.split(">", 1)[1].rsplit("</script>", 1)[0]
+            )
+            questions = [entry["name"] for entry in payload["mainEntity"]]
+            self.assertEqual(len(questions), len(set(questions)))
+            for question in questions:
+                self.assertIn(question, pages.strip_tags(visible))
+
+    def test_related_states_only_link_comparable_targets(self):
+        block = pages.related_states("CA", self.states["CA"], self.states)
+        self.assertIn("Same 50-hour target", block)
+        self.assertNotIn("california-supervised-driving-hours", block)
+
     def test_unverified_state_blocks_build(self):
         data = copy.deepcopy(self.raw)
         next(state for state in data["states"] if state["code"] == "CA")["status"] = "draft"

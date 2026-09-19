@@ -540,6 +540,7 @@ def page_shell(
     canonical: str,
     body: str,
     disclaimer: str = GENERAL_DISCLAIMER,
+    head_extra: str = "",
 ) -> str:
     return f"""<!doctype html>
 <html lang="en-US">
@@ -558,6 +559,7 @@ def page_shell(
   <link rel="icon" href="/assets/favicon.png" type="image/png">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
   <link rel="stylesheet" href="/site.css">
+{head_extra}
 </head>
 <body>
   <header class="topbar">
@@ -588,7 +590,188 @@ def page_shell(
 """
 
 
-def state_page(code: str, s: dict, verified_on: str) -> tuple[str, str, str]:
+def direct_answer(s: dict) -> str:
+    """The first sentence a searcher needs, before any explanation.
+
+    People arrive from a question ("how many hours does Texas need?"). Burying the number under a
+    paragraph of context costs the answer and the click, so the page leads with it and keeps the
+    caveats underneath.
+    """
+    name = esc(s["name"])
+    if s.get("no_hour_requirement"):
+        held = (
+            f" The learner permit must still be held for {esc(s['permit_days'])} days."
+            if s.get("permit_days")
+            else ""
+        )
+        return (
+            f"<strong>{name} does not set a numeric supervised-practice minimum</strong> in the "
+            f"graduated-licensing source cited below.{held} The other eligibility steps still apply."
+        )
+    parts = [f"<strong>{name} requires {esc(target_hours(s))} of supervised practice</strong>"]
+    if s.get("night"):
+        parts.append(f"including {esc(s['night'])} at night")
+    sentence = ", ".join(parts) + "."
+    extra = []
+    if s.get("daily_cap"):
+        extra.append(f"at most {esc(s['daily_cap'])} hours count on any one day")
+    if s.get("weekly_cap"):
+        extra.append(f"at most {esc(s['weekly_cap'])} hours count in any one week")
+    if s.get("min_days"):
+        extra.append(f"practice has to fall on at least {esc(s['min_days'])} different days")
+    if s.get("permit_months"):
+        extra.append(f"the permit must be held for {esc(s['permit_months'])} months")
+    elif s.get("permit_days"):
+        extra.append(f"the permit must be held for {esc(s['permit_days'])} days")
+    if extra:
+        joined = extra[0] if len(extra) == 1 else ", ".join(extra[:-1]) + " and " + extra[-1]
+        sentence += " On top of the total, " + joined + "."
+    return sentence
+
+
+def faq_entries(s: dict) -> list[tuple[str, str]]:
+    """Visible questions in the words people type, answered from the verified rule data.
+
+    Google retired FAQ rich results in May 2026, so this is not markup chasing a snippet: the
+    questions are here because they are the ones families actually ask, and assistants that read
+    the page answer from them.
+    """
+    name = esc(s["name"])
+    entries: list[tuple[str, str]] = []
+
+    if s.get("no_hour_requirement"):
+        entries.append((
+            f"How many practice hours does {name} require?",
+            f"The cited {name} source sets no numeric minimum. Keep a dated record anyway: it is "
+            "the only evidence you have of what was practised and when.",
+        ))
+    else:
+        answer = f"{name} requires {esc(target_hours(s))}"
+        answer += f", including {esc(s['night'])} at night." if s.get("night") else "."
+        entries.append((f"How many driving hours do you need in {name}?", answer))
+
+    if s.get("daily_cap"):
+        entries.append((
+            f"Can you log all the hours in a few long days in {name}?",
+            f"No. {name} credits at most {esc(s['daily_cap'])} hours per day, so a longer drive "
+            "still counts as that maximum. Spreading practice out is the only way to reach the total.",
+        ))
+    elif s.get("weekly_cap"):
+        entries.append((
+            f"Is there a weekly limit in {name}?",
+            f"Yes. No more than {esc(s['weekly_cap'])} hours count in any one week, so the total "
+            "cannot be crammed into the last month before applying.",
+        ))
+
+    if s.get("night_definition"):
+        entries.append((
+            f"What counts as night driving in {name}?",
+            f"{name} defines it as {esc(s['night_definition'])}. Record the day and night parts of "
+            "a drive separately as you go; splitting them afterwards is guesswork.",
+        ))
+
+    if s.get("permit_months"):
+        entries.append((
+            f"How long must the permit be held in {name}?",
+            f"At least {esc(s['permit_months'])} months. The clock runs from the date the permit "
+            "was issued, not from the first logged drive.",
+        ))
+    elif s.get("permit_days"):
+        entries.append((
+            f"How long must the permit be held in {name}?",
+            f"At least {esc(s['permit_days'])} days, counted from the date the permit was issued.",
+        ))
+
+    if s.get("output"):
+        accepted = f"{name} names {esc(s['output'])}."
+        if s.get("signature") == "notarized":
+            accepted += " The certification is sworn before a notary or a license examiner."
+        elif s.get("signature") == "per_entry":
+            accepted += " Every entry needs the supervising adult's signature."
+        if s.get("digital_accepted"):
+            accepted += " A digital or printed copy is accepted."
+        accepted += (
+            " An app printout is a supporting record, not that official form; check the source "
+            "below for what your office accepts."
+        )
+        entries.append((f"Does {name} accept a printed log from an app?", accepted))
+
+    return entries[:5]
+
+
+def faq_block(s: dict) -> tuple[str, str]:
+    """Returns the visible FAQ markup and the matching JSON-LD, or two empty strings."""
+    entries = faq_entries(s)
+    if not entries:
+        return "", ""
+    items = "".join(
+        f"<details><summary>{question}</summary><p>{answer}</p></details>"
+        for question, answer in entries
+    )
+    visible = f'  <h2>Common questions</h2>\n  <div class="faq">{items}</div>'
+    payload = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": html.unescape(strip_tags(question)),
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": html.unescape(strip_tags(answer)),
+                },
+            }
+            for question, answer in entries
+        ],
+    }
+    script = (
+        '  <script type="application/ld+json">'
+        + json.dumps(payload, ensure_ascii=False)
+        + "</script>"
+    )
+    return visible, script
+
+
+def strip_tags(value: str) -> str:
+    out: list[str] = []
+    depth = 0
+    for character in value:
+        if character == "<":
+            depth += 1
+        elif character == ">":
+            depth = max(0, depth - 1)
+        elif depth == 0:
+            out.append(character)
+    return "".join(out)
+
+
+def related_states(code: str, s: dict, states: dict) -> str:
+    """Links to jurisdictions whose rule is genuinely comparable, not a random link farm."""
+    if not states:
+        return ""
+    total = s.get("total")
+    peers = [
+        (other_code, other)
+        for other_code, other in sorted(states.items(), key=lambda item: item[1]["name"])
+        if other_code != code and other.get("total") == total and total is not None
+    ][:4]
+    if not peers:
+        return ""
+    links = " · ".join(
+        f'<a href="/guides/{slug_for(other_code, other["name"])}.html">{esc(other["name"])}</a>'
+        for other_code, other in peers
+    )
+    return (
+        f'  <p class="sources"><strong>Same {esc(total)}-hour target:</strong> {links}</p>'
+    )
+
+
+def state_page(
+    code: str,
+    s: dict,
+    verified_on: str,
+    states: dict | None = None,
+) -> tuple[str, str, str]:
     name = s["name"]
     slug = slug_for(code, name)
     total = target_hours(s)
@@ -638,48 +821,58 @@ def state_page(code: str, s: dict, verified_on: str) -> tuple[str, str, str]:
         )
 
     heading = (
-        f"{name} learner permit practice requirements"
+        f"What does the {name} learner permit require?"
         if s.get("no_hour_requirement")
-        else f"{name} supervised driving hours"
+        else f"How many supervised driving hours does {name} require?"
     )
+    faq_visible, faq_schema = faq_block(s)
+    related = related_states(code, s, states or {})
     if s.get("permit_curfew"):
         curfew = f'<div class="callout warn"><strong>Permit-stage limit:</strong> {esc(s["permit_curfew"])}</div>'
     body = f"""  <section class="guide-hero">
     <div class="wrap narrow">
       <p class="crumbs"><a href="/">Driving Log</a> › <a href="/guides/">State guides</a> › {esc(name)}</p>
       <h1>{esc(heading)}</h1>
-      <p class="lede">Verified against official {esc(name)} sources on {esc(verified_on)}.</p>
+      <p class="lede">{direct_answer(s)}</p>
+      <p class="crumbs">Checked against official {esc(name)} sources on {esc(verified_on)}.</p>
       <div class="stats">{stat_cards(s)}</div>
     </div>
   </section>
   <main class="wrap narrow prose">
   <div class="callout">{editorial_paragraph(s)}</div>
 
-  <h2>The requirement at a glance</h2>
+  <h2>What {esc(name)} asks for, line by line</h2>
   <table>
 {requirement_rows(s)}
   </table>
 {curfew}
 {special_rules(s)}
 
-  <h2>The paperwork</h2>
+  <h2>Which paperwork does {esc(name)} want?</h2>
 {form_para}
 {required_fields}
 {sources_block(s, verified_on)}
 
 {extras}
 
-  <h2>How Driving Log helps in {esc(name)}</h2>
+  <h2>How does Driving Log help in {esc(name)}?</h2>
   <p>Driving Log tracks each drive with its day and night minutes and, where {esc(name)} sets a
   numeric target, shows the time you drove beside the time that <em>counts</em> under the configured
   rules — with the reason whenever they differ. The core app is free, keeps everything on your device and private
   iCloud, and needs no account. A printable record of every entry is included; sourced worksheet
   layouts for several states are part of the one-time Pro upgrade.</p>
+{faq_visible}
+
+{related}
 {cta_block(name, f"guide-{code.lower()}")}
-  <p class="state-nav"><a href="/guides/">← All state guides</a><a href="/guides/roadready-alternative.html">Switching from RoadReady? →</a></p>
+  <p class="state-nav"><a href="/guides/">← All state guides</a><a href="/guides/best-driving-log-apps-permit-hours.html">Compare logging apps →</a></p>
   </main>"""
 
-    return slug, page_shell(title, description, canonical, body, STATE_DISCLAIMER), title
+    return (
+        slug,
+        page_shell(title, description, canonical, body, STATE_DISCLAIMER, head_extra=faq_schema),
+        title,
+    )
 
 
 def comparison_page(verified_on: str) -> tuple[str, str, str]:
@@ -986,7 +1179,7 @@ def main() -> None:
     OUT_DIR.mkdir(exist_ok=True)
     entries = []
     for code, state in states.items():
-        slug, html_text, title = state_page(code, state, verified_on)
+        slug, html_text, title = state_page(code, state, verified_on, states)
         (OUT_DIR / f"{slug}.html").write_text(html_text, encoding="utf-8")
         entries.append((slug, state["name"], guide_summary(state)))
     slug, html_text, title = comparison_page(verified_on)

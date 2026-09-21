@@ -33,7 +33,8 @@ FRESHNESS_LIMIT_DAYS = 90
 # The only states.json fields a page may read. Everything else is internal.
 PUBLIC_FIELDS = {
     "code", "name", "total", "total_minutes", "night", "night_minutes", "unit",
-    "permit_days", "permit_months", "min_days", "daily_cap", "weekly_cap",
+    "permit_days", "permit_months", "permit_additional_days", "permit_start_label",
+    "daytime_minutes", "min_days", "daily_cap", "weekly_cap",
     "permit_days_adult", "permit_days_without_school",
     "supervisor_min_age", "supervisor_min_license_years",
     "output", "signature", "night_definition", "supervisor_note", "signer_note",
@@ -54,6 +55,12 @@ ALTERNATIVE_REQUIREMENT_FIELDS = {
 MILESTONE_FIELDS = {
     "total", "night", "additional_total", "additional_night", "note",
 }
+
+APPLICANT_PATH_FIELDS = {
+    "id", "title", "totalMinutes", "nightMinutes", "permitDays", "permitMonths",
+    "requiresEducation", "effectiveFrom", "effectiveTo", "note",
+}
+STAGE_TARGET_FIELDS = {"total", "night", "holding_months", "no_hour_target"}
 
 CATEGORY_FIELDS = {"name", "hours"}
 
@@ -236,6 +243,16 @@ def load_states(
             fail(f"{code} cannot have both total and no_hour_requirement=true.")
 
         published = {k: v for k, v in state.items() if k in PUBLIC_FIELDS}
+        if "applicant_paths" in state:
+            published["applicant_paths"] = [
+                {k: v for k, v in path.items() if k in APPLICANT_PATH_FIELDS}
+                for path in state["applicant_paths"]
+            ]
+        if "stage_targets" in state:
+            published["stage_targets"] = {
+                stage: {k: v for k, v in value.items() if k in STAGE_TARGET_FIELDS}
+                for stage, value in state["stage_targets"].items()
+            }
         conditional = state.get("conditional_target")
         if conditional is not None:
             if not isinstance(conditional, dict) or not conditional.get("condition"):
@@ -303,6 +320,32 @@ def target_hours(s: dict) -> str:
     return " or ".join(str(value) for value in values) + " hours"
 
 
+def target_night_hours(s: dict) -> str:
+    values = {s.get("night")}
+    conditional = s.get("conditional_target") or {}
+    if conditional.get("night") is not None:
+        values.add(conditional["night"])
+    return " or ".join(str(value) for value in sorted(v for v in values if v is not None))
+
+
+def night_varies_by_path(s: dict) -> bool:
+    """True only when the night figure itself differs between paths.
+
+    "10 at night for the matching path" invites the reader to pick a path. On a page that shows a
+    single night target there is nothing to pick, so the qualifier is dropped.
+    """
+    if " or " in target_night_hours(s):
+        return True
+    default = s.get("night")
+    for path in s.get("applicant_paths") or []:
+        minutes = path.get("nightMinutes")
+        if minutes is None:
+            continue
+        if default is None or minutes != default * 60:
+            return True
+    return False
+
+
 def slug_for(code: str, name: str) -> str:
     if code in SLUGS:
         return SLUGS[code]
@@ -313,6 +356,19 @@ def slug_for(code: str, name: str) -> str:
 
 def humanize(value: str) -> str:
     return value.replace("_", " ")
+
+
+def holding_period(s: dict) -> str:
+    if s.get("permit_months"):
+        period = f"{s['permit_months']} calendar months"
+        if s.get("permit_additional_days"):
+            period += f" plus {s['permit_additional_days']} day"
+        return period
+    return f"{s['permit_days']} days" if s.get("permit_days") else ""
+
+
+def holding_anchor(s: dict) -> str:
+    return s.get("permit_start_label") or ("Permit validation after the knowledge test" if s["code"] == "NJ" else "Permit issue date")
 
 
 def requirement_rows(s: dict) -> str:
@@ -341,12 +397,15 @@ def requirement_rows(s: dict) -> str:
         )
     if s.get("night"):
         rows.append(("Of which at night", hours(s, "night")))
+    if s.get("daytime_minutes"):
+        rows.append(("Minimum daytime practice", f"{s['daytime_minutes'] / 60:g} hours; extra night hours do not replace daytime"))
     if s.get("night_definition"):
         rows.append(("Night means", s["night_definition"]))
-    if s.get("permit_months"):
-        rows.append(("Permit must be held", f"{s['permit_months']} months"))
-    elif s.get("permit_days"):
-        rows.append(("Permit must be held", f"{s['permit_days']} days"))
+    if holding_period(s):
+        rows.append(("Default supervised period", holding_period(s)))
+        rows.append(("Period starts", holding_anchor(s)))
+    if s.get("applicant_paths"):
+        rows.append(("Age / permit paths", "The default figures above vary by the applicant paths below. Select the matching path in the app."))
     if s.get("permit_days_without_school"):
         rows.append(
             (
@@ -396,6 +455,26 @@ def requirement_rows(s: dict) -> str:
 
 def special_rules(s: dict) -> str:
     sections: list[str] = []
+    paths = s.get("applicant_paths", [])
+    if paths:
+        items = []
+        for path in paths:
+            dates = ""
+            if path.get("effectiveFrom"):
+                dates += f" Applies from {path['effectiveFrom']}."
+            if path.get("effectiveTo"):
+                dates += f" Applies through {path['effectiveTo']}."
+            items.append(f"<li><strong>{esc(path['title'])}:</strong> {esc(path['note'])}{esc(dates)}</li>")
+        sections.append("<h3>Choose the matching applicant path</h3><ul>" + "".join(items) + "</ul>")
+    stages = s.get("stage_targets", {})
+    stage_items = []
+    for stage, target in stages.items():
+        details = "No separate hour quota" if target.get("no_hour_target") else f"{target['total']} hours, including {target.get('night') or 0} at night"
+        if target.get("holding_months"):
+            details += f"; {target['holding_months']} calendar months from the intermediate/provisional license issue date"
+        stage_items.append(f"<li>{esc(humanize(stage))}: {esc(details)}.</li>")
+    if stage_items:
+        sections.append("<h3>Current licence-stage requirements</h3><ul>" + "".join(stage_items) + "</ul>")
     milestones = s.get("milestone", {})
     if milestones:
         items = "".join(
@@ -461,9 +540,14 @@ def stat_cards(s: dict) -> str:
     else:
         cards.append((target_hours(s).replace(" hours", ""), "supervised hours required"))
     if s.get("night"):
-        cards.append((str(s["night"]), "of those hours at night"))
+        label = (
+            "night hours for the matching path"
+            if night_varies_by_path(s)
+            else "of those hours at night"
+        )
+        cards.append((target_night_hours(s), label))
     if s.get("permit_months"):
-        cards.append((f"{s['permit_months']} mo", "permit holding period"))
+        cards.append((holding_period(s), "default supervised period"))
     elif s.get("permit_days"):
         cards.append((f"{s['permit_days']} days", "permit holding period"))
     if s.get("daily_cap"):
@@ -483,7 +567,7 @@ def guide_summary(s: dict) -> str:
         return "No set hour minimum"
     summary = target_hours(s)
     if s.get("night"):
-        summary += f" · {s['night']} at night"
+        summary += f" · {target_night_hours(s)} at night"
     return summary
 
 
@@ -610,7 +694,8 @@ def direct_answer(s: dict) -> str:
         )
     parts = [f"<strong>{name} requires {esc(target_hours(s))} of supervised practice</strong>"]
     if s.get("night"):
-        parts.append(f"including {esc(s['night'])} at night")
+        qualifier = " for the matching path" if night_varies_by_path(s) else ""
+        parts.append(f"including {esc(target_night_hours(s))} at night{qualifier}")
     sentence = ", ".join(parts) + "."
     extra = []
     if s.get("daily_cap"):
@@ -620,12 +705,16 @@ def direct_answer(s: dict) -> str:
     if s.get("min_days"):
         extra.append(f"practice has to fall on at least {esc(s['min_days'])} different days")
     if s.get("permit_months"):
-        extra.append(f"the permit must be held for {esc(s['permit_months'])} months")
+        extra.append(f"the default supervised period is {esc(holding_period(s))}, starting at {esc(holding_anchor(s)).lower()}")
     elif s.get("permit_days"):
         extra.append(f"the permit must be held for {esc(s['permit_days'])} days")
     if extra:
         joined = extra[0] if len(extra) == 1 else ", ".join(extra[:-1]) + " and " + extra[-1]
         sentence += " On top of the total, " + joined + "."
+    if s.get("daytime_minutes"):
+        sentence += f" At least {s['daytime_minutes'] / 60:g} hours must be daytime practice."
+    if s.get("applicant_paths"):
+        sentence += " These are the default figures; age, permit date and course choices change the target as detailed below."
     return sentence
 
 
@@ -647,7 +736,15 @@ def faq_entries(s: dict) -> list[tuple[str, str]]:
         ))
     else:
         answer = f"{name} requires {esc(target_hours(s))}"
-        answer += f", including {esc(s['night'])} at night." if s.get("night") else "."
+        if s.get("night"):
+            qualifier = " for the matching path" if night_varies_by_path(s) else ""
+            answer += f", including {esc(target_night_hours(s))} at night{qualifier}."
+        else:
+            answer += "."
+        if s.get("daytime_minutes"):
+            answer += f" At least {s['daytime_minutes'] / 60:g} hours must be in daytime."
+        if s.get("applicant_paths"):
+            answer += " These are the default figures. Use the matching age and permit path below; some paths reduce or remove this quota."
         entries.append((f"How many driving hours do you need in {name}?", answer))
 
     if s.get("daily_cap"):
@@ -673,8 +770,7 @@ def faq_entries(s: dict) -> list[tuple[str, str]]:
     if s.get("permit_months"):
         entries.append((
             f"How long must the permit be held in {name}?",
-            f"At least {esc(s['permit_months'])} months. The clock runs from the date the permit "
-            "was issued, not from the first logged drive.",
+            f"The default period is {esc(holding_period(s))}, starting at {esc(holding_anchor(s)).lower()}. Check the applicant and licence-stage paths below for exceptions.",
         ))
     elif s.get("permit_days"):
         entries.append((
@@ -1014,8 +1110,8 @@ def texas_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
     slug = "texas-30-hour-log-what-counts"
     title = "Texas 30-hour driving log: what actually counts"
     description = (
-        "How the Texas 30-hour behind-the-wheel log works: the 2-hour daily cap, 10 night hours, "
-        "30 separate days, the 6-month permit period and TDLR form DES150N, explained for parents."
+        "The Texas 30-hour log explained: a 2-hour daily cap, 20 daytime and 10 night hours, "
+        "the 6-month permit period and TDLR form DES150N."
     )
     canonical = f"{BASE_URL}/guides/{slug}.html"
     body = f"""  <section class="guide-hero">
@@ -1029,13 +1125,13 @@ def texas_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
   <main class="wrap narrow prose">
   <div class="callout">Most Texas families find out late that <strong>only {esc(s["daily_cap"])} hours per day</strong>
   count toward the {esc(s["total"])}. A four-hour road trip is good practice, but it credits two hours on the
-  log. Spread practice across at least {esc(s["min_days"])} different days.</div>
+  log. At least 20 hours must be daytime and 10 hours nighttime. The current form sets no separate 30-day minimum.</div>
 
   <h2>The five numbers</h2>
   <table>
     <tr><th scope="row">Supervised practice</th><td>{esc(s["total"])} hours, of which {esc(s["night"])} at night</td></tr>
     <tr><th scope="row">Daily credit cap</th><td>{esc(s["daily_cap"])} hours per day</td></tr>
-    <tr><th scope="row">Separate practice days</th><td>at least {esc(s["min_days"])}</td></tr>
+    <tr><th scope="row">Minimum daytime practice</th><td>{s["daytime_minutes"] / 60:g} hours</td></tr>
     <tr><th scope="row">Learner license held</th><td>at least {esc(s["permit_months"])} months</td></tr>
     <tr><th scope="row">Supervising adult</th><td>age {esc(s["supervisor_min_age"])}+, licensed {esc(s["supervisor_min_license_years"])}+ years, signs each entry</td></tr>
   </table>
@@ -1056,7 +1152,7 @@ def texas_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
   <ul>
     <li>Apply the {esc(s["daily_cap"])}-hour daily cap automatically and show both the time you drove and the time that counts.</li>
     <li>Keep night minutes separate from day minutes.</li>
-    <li>Count distinct practice days toward the {esc(s["min_days"])}-day minimum.</li>
+    <li>Check the 20-hour daytime minimum separately from the 10-hour nighttime minimum.</li>
     <li>Print a dated record you can copy onto, or attach to, the TDLR form. No app produces the official form itself.</li>
   </ul>
   <p>Driving Log does these four things for Texas and links the rule to its source. The full rule summary is on the
@@ -1072,8 +1168,8 @@ def florida_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
     slug = "florida-50-hour-log-notarized-certification"
     title = "Florida 50-hour driving log and the notarized certification"
     description = (
-        "Florida learner's license practice: 50 supervised hours with 10 at night, daylight-only "
-        "driving for the first 3 months, and the certification signed before a notary or examiner."
+        "Florida learner's license practice: 50 hours with 10 at night, daylight-only driving for "
+        "3 months, and a certification sworn before a notary or examiner."
     )
     canonical = f"{BASE_URL}/guides/{slug}.html"
     body = f"""  <section class="guide-hero">

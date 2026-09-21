@@ -10,7 +10,7 @@ import unittest
 import generate_pages as pages
 
 
-TODAY = datetime.date(2026, 9, 2)
+TODAY = datetime.date(2026, 9, 21)
 
 
 class GuideGeneratorTests(unittest.TestCase):
@@ -26,6 +26,34 @@ class GuideGeneratorTests(unittest.TestCase):
         path = directory / "states.json"
         path.write_text(json.dumps(data), encoding="utf-8")
         return path
+
+    def test_audit_daytime_stage_and_age_rules_are_published_consistently(self):
+        _, texas, _ = pages.texas_deep_page(self.states["TX"], self.verified_on)
+        self.assertIn("20 hours", texas)
+        self.assertIn("10 or 15 at night", pages.direct_answer(self.states["MT"]))
+        self.assertNotIn("30 separate days", texas)
+        self.assertNotIn("30-day minimum.</li>", texas)
+        for code, expected in [("HI", "40 hours; extra night"),
+                               ("MT", "6 calendar months plus 1 day"),
+                               ("MD", "45 days with the permit"),
+                               ("NJ", "Turning 21 does not remove"),
+                               ("VA", "2027-01-01"),
+                               ("NC", "No separate hour quota"),
+                               ("DC", "6 calendar months from the intermediate")]:
+            _, page, _ = pages.state_page(code, self.states[code], self.verified_on)
+            self.assertIn(expected, page, code)
+        _, idaho, _ = pages.state_page("ID", self.states["ID"], self.verified_on)
+        self.assertIn("Driver training completed / supervised practice started", idaho)
+        self.assertNotIn("from the date the permit was issued", idaho)
+
+    def test_new_nested_rule_fields_keep_research_private(self):
+        data = copy.deepcopy(self.raw)
+        state = next(state for state in data["states"] if state["code"] == "MD")
+        state["applicant_paths"][0]["internal_research"] = "PRIVATE PATH NOTE"
+        state = next(state for state in data["states"] if state["code"] == "NC")
+        state["stage_targets"]["intermediate"]["internal_research"] = "PRIVATE STAGE NOTE"
+        states, _ = pages.load_states(self.write_fixture(data), today=TODAY)
+        self.assertNotIn("PRIVATE", json.dumps(states))
 
     def test_internal_research_fields_never_enter_published_state(self):
         forbidden = {
@@ -87,14 +115,16 @@ class GuideGeneratorTests(unittest.TestCase):
 
         _, arkansas, _ = pages.state_page("AR", self.states["AR"], self.verified_on)
         self.assertIn("No numeric minimum is stated", arkansas)
-        self.assertIn("180 days", arkansas)
+        self.assertIn("6 calendar months", arkansas)
 
         _, hawaii, _ = pages.state_page("HI", self.states["HI"], self.verified_on)
         self.assertIn("Hawaii supervised driving: 50 hours", hawaii)
         self.assertIn("10 hours", hawaii)
         self.assertIn("age 21+", hawaii)
         self.assertIn("notarized", hawaii)
-        self.assertIn("Acknowledgement-of-Practice-Driving-Log.pdf", hawaii)
+        self.assertIn("https://hidot.hawaii.gov/highways/files/2013/01/HAR19-139.pdf", hawaii)
+        self.assertIn("40 daytime hours", hawaii)
+        self.assertIn("HRS_0286-0110.htm", hawaii)
 
         _, iowa, _ = pages.state_page("IA", self.states["IA"], self.verified_on)
         self.assertIn("20 hours before the intermediate license", iowa)
@@ -159,6 +189,10 @@ class GuideGeneratorTests(unittest.TestCase):
     def test_content_pages_keep_claims_honest(self):
         for slug, page, title in pages.content_pages(self.states, self.verified_on):
             self.assertLessEqual(len(title), 70)
+            # Search engines cut the snippet around here, and the state pages are already
+            # held to this; the hand-written pages were not, and two had drifted over.
+            description = page.split('<meta name="description" content="', 1)[1].split('">', 1)[0]
+            self.assertLessEqual(len(description), 165, slug)
             self.assertNotIn("DMV approved", page)
             self.assertNotIn("DMV-approved", page)
             self.assertIn("not legal advice", page)
@@ -205,6 +239,37 @@ class GuideGeneratorTests(unittest.TestCase):
         self.assertIn("Same 50-hour target", block)
         self.assertNotIn("california-supervised-driving-hours", block)
 
+
+    def test_matching_path_qualifier_only_where_the_night_target_varies(self):
+        single = pages.night_varies_by_path({"night": 10})
+        self.assertFalse(single)
+        self.assertTrue(
+            pages.night_varies_by_path({"night": 10, "conditional_target": {"night": 15}})
+        )
+        self.assertTrue(
+            pages.night_varies_by_path(
+                {"night": 10, "applicant_paths": [{"nightMinutes": 900}]}
+            )
+        )
+        self.assertFalse(
+            pages.night_varies_by_path(
+                {"night": 10, "applicant_paths": [{"nightMinutes": 600}, {"nightMinutes": None}]}
+            )
+        )
+
+        _, hawaii, _ = pages.state_page("HI", self.states["HI"], self.verified_on, self.states)
+        self.assertIn("including 10 at night.", hawaii)
+        self.assertNotIn("for the matching path", hawaii)
+
+        # Montana's alternative course path really does change the night figure, Minnesota's
+        # only changes the total, so only Montana invites the reader to pick a path.
+        _, montana, _ = pages.state_page("MT", self.states["MT"], self.verified_on, self.states)
+        self.assertIn("10 or 15 at night for the matching path", montana)
+
+        _, minnesota, _ = pages.state_page("MN", self.states["MN"], self.verified_on, self.states)
+        self.assertIn("including 15 at night.", minnesota)
+        self.assertNotIn("for the matching path", minnesota)
+
     def test_unverified_state_blocks_build(self):
         data = copy.deepcopy(self.raw)
         next(state for state in data["states"] if state["code"] == "CA")["status"] = "draft"
@@ -226,7 +291,7 @@ class GuideGeneratorTests(unittest.TestCase):
             pages.load_states(self.write_fixture(stale), today=TODAY)
 
         future = copy.deepcopy(self.raw)
-        future["_meta"]["verified_on"] = "2026-09-03"
+        future["_meta"]["verified_on"] = (TODAY + datetime.timedelta(days=1)).isoformat()
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
             pages.load_states(self.write_fixture(future), today=TODAY)
 

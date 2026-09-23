@@ -6,6 +6,8 @@ import json
 import pathlib
 import tempfile
 import unittest
+from html.parser import HTMLParser
+from urllib.parse import urljoin, urldefrag
 
 import generate_pages as pages
 
@@ -26,6 +28,45 @@ class GuideGeneratorTests(unittest.TestCase):
         path = directory / "states.json"
         path.write_text(json.dumps(data), encoding="utf-8")
         return path
+
+    def test_every_published_page_is_reachable_from_home(self):
+        class Links(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.hrefs = []
+
+            def handle_starttag(self, tag, attrs):
+                attrs = dict(attrs)
+                if tag == "a" and attrs.get("href"):
+                    self.hrefs.append(attrs["href"])
+
+        documents = {}
+        for filename in ("index.html", "support.html", "privacy.html"):
+            path = "/" if filename == "index.html" else "/" + filename
+            documents[pages.BASE_URL + path] = (pages.REPO / filename).read_text()
+        entries = []
+        for code, state in self.states.items():
+            slug, markup, title = pages.state_page(code, state, self.verified_on, self.states)
+            documents[f"{pages.BASE_URL}/guides/{slug}.html"] = markup
+            entries.append((slug, state["name"], pages.guide_summary(state)))
+        slug, markup, title = pages.comparison_page(self.verified_on)
+        documents[f"{pages.BASE_URL}/guides/{slug}.html"] = markup
+        entries.append((slug, title, ""))
+        for slug, markup, _ in pages.content_pages(self.states, self.verified_on):
+            documents[f"{pages.BASE_URL}/guides/{slug}.html"] = markup
+        documents[f"{pages.BASE_URL}/guides/"] = pages.index_page(entries, self.verified_on)
+
+        pending = [pages.BASE_URL + "/"]
+        visited = set()
+        while pending:
+            url = pending.pop()
+            if url in visited or url not in documents:
+                continue
+            visited.add(url)
+            parser = Links()
+            parser.feed(documents[url])
+            pending.extend(urldefrag(urljoin(url, href))[0] for href in parser.hrefs)
+        self.assertEqual(set(documents) - visited, set(), "Published pages need a crawlable path from home")
 
     def test_audit_daytime_stage_and_age_rules_are_published_consistently(self):
         _, texas, _ = pages.texas_deep_page(self.states["TX"], self.verified_on)

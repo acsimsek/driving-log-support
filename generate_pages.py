@@ -862,6 +862,17 @@ def related_states(code: str, s: dict, states: dict) -> str:
     )
 
 
+def detailed_guide_link(code: str) -> str:
+    guides = {
+        "TX": ("texas-30-hour-log-what-counts", "Texas 30-hour log: what counts toward the total"),
+        "FL": ("florida-50-hour-log-notarized-certification", "Florida 50-hour log and notarized certification"),
+    }
+    if code not in guides:
+        return ""
+    slug, title = guides[code]
+    return f'<p><a href="/guides/{slug}.html">{esc(title)}</a></p>\n'
+
+
 def state_page(
     code: str,
     s: dict,
@@ -947,7 +958,7 @@ def state_page(
   <h2>Which paperwork does {esc(name)} want?</h2>
 {form_para}
 {required_fields}
-{sources_block(s, verified_on)}
+{detailed_guide_link(code)}{sources_block(s, verified_on)}
 
 {extras}
 
@@ -1247,6 +1258,11 @@ def index_page(entries: list[tuple[str, str, str]], verified_on: str) -> str:
     <input type="search" id="guide-filter" placeholder="Start typing a state name…" autocomplete="off">
     <ul class="guide-grid" id="guide-list">{items}</ul>
   </div>
+  <section class="prose" aria-labelledby="practical-guides">
+    <h2 id="practical-guides">Practical guides to logging your hours</h2>
+    {detailed_guide_link("TX")}
+    {detailed_guide_link("FL")}
+  </section>
   <div class="callout" style="margin-top:28px"><strong>Choosing or switching apps?</strong>
     <a href="/guides/best-driving-log-apps-permit-hours.html">Best driving log apps for permit hours (2026)</a> ·
     <a href="/guides/{comparison[0]}.html">{esc(comparison[1])}</a></div>

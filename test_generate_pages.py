@@ -49,6 +49,8 @@ class GuideGeneratorTests(unittest.TestCase):
             slug, markup, title = pages.state_page(code, state, self.verified_on, self.states)
             documents[f"{pages.BASE_URL}/guides/{slug}.html"] = markup
             entries.append((slug, state["name"], pages.guide_summary(state)))
+            sheet_slug, sheet_markup, _ = pages.log_sheet_page(code, state, self.verified_on)
+            documents[f"{pages.BASE_URL}/guides/{sheet_slug}.html"] = sheet_markup
         slug, markup, title = pages.comparison_page(self.verified_on)
         documents[f"{pages.BASE_URL}/guides/{slug}.html"] = markup
         entries.append((slug, title, ""))
@@ -139,12 +141,12 @@ class GuideGeneratorTests(unittest.TestCase):
 
     def test_conditional_and_state_specific_rules_are_rendered(self):
         _, minnesota, _ = pages.state_page("MN", self.states["MN"], self.verified_on)
-        self.assertIn("Minnesota supervised driving: 40 or 50 hours", minnesota)
+        self.assertIn("Minnesota driving log: 40 or 50 hours, 15 at night", minnesota)
         self.assertIn("If the parent completes the 90-minute awareness course", minnesota)
         self.assertIn("ct=guide-mn", minnesota)
 
         _, nevada, _ = pages.state_page("NV", self.states["NV"], self.verified_on)
-        self.assertIn("Nevada supervised driving: 50 or 100 hours", nevada)
+        self.assertIn("Nevada driving log: 50 or 100 hours, 10 at night", nevada)
         self.assertIn("Night means</th><td>in darkness", nevada)
 
         _, florida, _ = pages.state_page("FL", self.states["FL"], self.verified_on)
@@ -159,7 +161,7 @@ class GuideGeneratorTests(unittest.TestCase):
         self.assertIn("6 calendar months", arkansas)
 
         _, hawaii, _ = pages.state_page("HI", self.states["HI"], self.verified_on)
-        self.assertIn("Hawaii supervised driving: 50 hours", hawaii)
+        self.assertIn("Hawaii driving log: 50 hours, 10 at night", hawaii)
         self.assertIn("10 hours", hawaii)
         self.assertIn("age 21+", hawaii)
         self.assertIn("notarized", hawaii)
@@ -248,6 +250,49 @@ class GuideGeneratorTests(unittest.TestCase):
         self.assertIn("notary", florida)
         self.assertIn("first 3 months", florida)
 
+
+    def test_log_sheet_pages_are_printable_and_honest(self):
+        slugs = set()
+        for code, state in self.states.items():
+            slug, page, title = pages.log_sheet_page(code, state, self.verified_on)
+            slugs.add(slug)
+            self.assertTrue(slug.endswith("-driving-log-sheet"), slug)
+            self.assertLessEqual(len(title), 60, slug)
+            description = page.split('<meta name="description" content="', 1)[1].split('">', 1)[0]
+            self.assertLessEqual(len(description), 165, slug)
+            self.assertIn("not an official form", page)
+            self.assertNotIn("DMV approved", page)
+            self.assertIn("window.print()", page)
+            self.assertIn(f"ct=sheet-{code.lower()}", page)
+            self.assertIn(state["source"].replace("&", "&amp;"), page)
+            self.assertIn(f'href="/guides/{pages.slug_for(code, state["name"])}.html"', page)
+            self.assertIn("not legal advice", page)
+            self.assertEqual(page.count("<tr><td></td>"), 18, slug)
+        self.assertEqual(len(slugs), 51)
+        _, texas, _ = pages.log_sheet_page("TX", self.states["TX"], self.verified_on)
+        self.assertIn("Only 2 hours per day count", texas)
+        self.assertIn("signs each entry", texas)
+        _, florida, _ = pages.log_sheet_page("FL", self.states["FL"], self.verified_on)
+        self.assertIn("sworn before a notary", florida)
+        _, arkansas, _ = pages.log_sheet_page("AR", self.states["AR"], self.verified_on)
+        self.assertIn("no numeric practice minimum", arkansas)
+        # Every state guide must link its sheet, and the sheet must appear in print styles.
+        _, guide, _ = pages.state_page("FL", self.states["FL"], self.verified_on, self.states)
+        self.assertIn('href="/guides/florida-driving-log-sheet.html"', guide)
+        self.assertIn("@media print", (pages.REPO / "site.css").read_text())
+
+    def test_deep_guides_show_the_app_before_the_fold_and_a_worked_example(self):
+        for code, builder in (("TX", pages.texas_deep_page), ("FL", pages.florida_deep_page)):
+            _, page, title = builder(self.states[code], self.verified_on)
+            self.assertIn("cta-inline", page)
+            self.assertIn("free on iPhone", page)
+            self.assertIn("A filled-in example", page)
+            self.assertIn("Mistakes that", page)
+            self.assertIn("-driving-log-sheet.html", page)
+            # The inline prompt must come before the first H2, not buried at the end.
+            self.assertLess(page.index("cta-inline"), page.index("<h2>"))
+        _, texas, _ = pages.texas_deep_page(self.states["TX"], self.verified_on)
+        self.assertIn("4 h 40 min counted", texas)
 
     def test_state_pages_lead_with_the_answer_and_ask_real_questions(self):
         _, texas, _ = pages.state_page("TX", self.states["TX"], self.verified_on, self.states)

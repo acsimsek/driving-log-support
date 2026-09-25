@@ -862,6 +862,37 @@ def related_states(code: str, s: dict, states: dict) -> str:
     )
 
 
+def sheet_slug_for(name: str) -> str:
+    words = "".join(character.lower() if character.isalnum() else " " for character in name)
+    return "-".join(words.split()) + "-driving-log-sheet"
+
+
+def sheet_link(name: str) -> str:
+    return (
+        f'<p class="sheet-link"><a href="/guides/{sheet_slug_for(name)}.html">Printable {esc(name)} '
+        "driving log sheet</a> — a blank, dated log with day and night columns and a signature "
+        "block. Print it or save it as a PDF.</p>\n"
+    )
+
+
+def inline_cta(state_name: str, campaign: str, headline: str) -> str:
+    """A compact, above-the-fold download prompt with a real app screen.
+
+    The full CTA panel stays at the end of the page; this one sits right after the direct
+    answer so a reader who got what they came for sees the app before scrolling away.
+    """
+    return f"""
+  <aside class="cta-inline no-print">
+    <div>
+      <h3>{esc(headline)}</h3>
+      <p>Driving Log keeps the {esc(state_name)} rules, splits day and night minutes and prints a dated
+      record with a signature block. Free for one learner, no account, nothing collected.</p>
+      <a class="btn" href="{esc(campaign_url(campaign))}">Download free for iPhone</a>
+    </div>
+    <div class="phone"><picture><source srcset="/assets/progress.webp" type="image/webp"><img src="/assets/progress.png" alt="Driving Log progress screen with logged time, counted time and remaining requirements" width="720" height="1564" loading="lazy"></picture></div>
+  </aside>"""
+
+
 def detailed_guide_link(code: str) -> str:
     guides = {
         "TX": ("texas-30-hour-log-what-counts", "Texas 30-hour log: what counts toward the total"),
@@ -890,11 +921,12 @@ def state_page(
             "Learn what to record when the cited GDL source sets no hour minimum."
         )
     else:
-        title = f"{name} supervised driving: {total}"
+        title = f"{name} driving log: {total}" + (f", {night} at night" if night else "")
         description = (
-            f"{name} supervised driving rules: {total}"
-            + (f"; {night} at night" if night else "")
-            + ". Check permit timing, credited limits, log paperwork and official state sources."
+            f"{name} driving log rules: {total}"
+            + (f", {night} at night" if night else "")
+            + ". Permit timing, what counts, the official paperwork, a printable log sheet "
+            "and the state sources."
         )
     canonical = f"{BASE_URL}/guides/{slug}.html"
 
@@ -958,7 +990,7 @@ def state_page(
   <h2>Which paperwork does {esc(name)} want?</h2>
 {form_para}
 {required_fields}
-{detailed_guide_link(code)}{sources_block(s, verified_on)}
+{sheet_link(name)}{detailed_guide_link(code)}{sources_block(s, verified_on)}
 
 {extras}
 
@@ -1119,16 +1151,16 @@ def comparison_hub_page(verified_on: str) -> tuple[str, str, str]:
 
 def texas_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
     slug = "texas-30-hour-log-what-counts"
-    title = "Texas 30-hour driving log: what actually counts"
+    title = "Texas 30-hour driving log: the 2-hour daily cap and what counts"
     description = (
-        "The Texas 30-hour log explained: a 2-hour daily cap, 20 daytime and 10 night hours, "
-        "the 6-month permit period and TDLR form DES150N."
+        "The Texas 30-hour log explained: only 2 hours per day count, 20 daytime and 10 night "
+        "hours, the 6-month permit, form DES150N and a printable log sheet."
     )
     canonical = f"{BASE_URL}/guides/{slug}.html"
     body = f"""  <section class="guide-hero">
     <div class="wrap narrow">
       <p class="crumbs"><a href="/">Driving Log</a> › <a href="/guides/">State guides</a> › Texas 30-hour log</p>
-      <h1>Texas 30-hour driving log: what actually counts</h1>
+      <h1>Texas 30-hour driving log: the 2-hour daily cap and what counts</h1>
       <p class="lede">Checked against TDLR's form and guide on {esc(verified_on)}.</p>
       <div class="stats">{stat_cards(s)}</div>
     </div>
@@ -1137,7 +1169,7 @@ def texas_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
   <div class="callout">Most Texas families find out late that <strong>only {esc(s["daily_cap"])} hours per day</strong>
   count toward the {esc(s["total"])}. A four-hour road trip is good practice, but it credits two hours on the
   log. At least 20 hours must be daytime and 10 hours nighttime. The current form sets no separate 30-day minimum.</div>
-
+{inline_cta("Texas", "guide-tx-deep", "Track your Texas hours free on iPhone")}
   <h2>The five numbers</h2>
   <table>
     <tr><th scope="row">Supervised practice</th><td>{esc(s["total"])} hours, of which {esc(s["night"])} at night</td></tr>
@@ -1168,6 +1200,27 @@ def texas_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
   </ul>
   <p>Driving Log does these four things for Texas and links the rule to its source. The full rule summary is on the
   <a href="/guides/texas-behind-the-wheel-hours.html">Texas guide</a>.</p>
+
+  <h2>A filled-in example: how the daily cap changes the total</h2>
+  <p>Four illustrative drives, logged the way the form asks. The last column is what Texas credits.</p>
+  <table>
+    <tr><th scope="col">Date</th><th scope="col">Time</th><th scope="col">Driven</th><th scope="col">Day / night</th><th scope="col">Counts</th></tr>
+    <tr><td>Sat 14 Mar</td><td>9:10–10:00 am</td><td>50 min</td><td>day</td><td>50 min</td></tr>
+    <tr><td>Sat 14 Mar</td><td>2:00–4:30 pm</td><td>2 h 30 min</td><td>day</td><td>1 h 10 min (day cap reached)</td></tr>
+    <tr><td>Wed 18 Mar</td><td>8:40–9:20 pm</td><td>40 min</td><td>night</td><td>40 min</td></tr>
+    <tr><td>Sun 22 Mar</td><td>10:00 am–1:00 pm</td><td>3 h</td><td>day</td><td>2 h</td></tr>
+    <tr><th scope="row">Driven 7 h</th><td colspan="3"></td><td><strong>4 h 40 min counted</strong></td></tr>
+  </table>
+
+  <h2>Mistakes that get Texas logs questioned</h2>
+  <ul>
+    <li><strong>Counting a long drive at face value.</strong> A 3-hour drive credits 2 hours; a second drive the same day credits nothing once the cap is reached.</li>
+    <li><strong>No am/pm, no day/night split.</strong> The form asks for both; a total without them cannot show the 20 daytime and 10 nighttime hours.</li>
+    <li><strong>Missing adult signatures.</strong> Texas wants the supervising adult to sign each entry, not just the last page.</li>
+    <li><strong>Mixing in the driver-education in-car hours.</strong> The 7 behind-the-wheel and 7 observation hours belong to the course record, not to the 30-hour log.</li>
+    <li><strong>Reconstructing the log at the end.</strong> Dates and times written from memory are the entries examiners ask about.</li>
+  </ul>
+{sheet_link("Texas")}
 {sources_block(s, verified_on)}
 {cta_block("Texas", "guide-tx-deep")}
   <p class="state-nav"><a href="/guides/texas-behind-the-wheel-hours.html">← Texas guide</a><a href="/guides/">All state guides →</a></p>
@@ -1177,16 +1230,16 @@ def texas_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
 
 def florida_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
     slug = "florida-50-hour-log-notarized-certification"
-    title = "Florida 50-hour driving log and the notarized certification"
+    title = "Florida 50-hour driving log: night hours, notary and what counts"
     description = (
-        "Florida learner's license practice: 50 hours with 10 at night, daylight-only driving for "
-        "3 months, and a certification sworn before a notary or examiner."
+        "Florida's 50-hour log explained: 10 night hours, daylight-only driving for the first 3 "
+        "months, the notarized certification and a printable log sheet."
     )
     canonical = f"{BASE_URL}/guides/{slug}.html"
     body = f"""  <section class="guide-hero">
     <div class="wrap narrow">
       <p class="crumbs"><a href="/">Driving Log</a> › <a href="/guides/">State guides</a> › Florida 50-hour log</p>
-      <h1>Florida 50-hour driving log and the notarized certification</h1>
+      <h1>Florida 50-hour driving log: night hours, notary and what counts</h1>
       <p class="lede">Checked against FLHSMV's driving log on {esc(verified_on)}.</p>
       <div class="stats">{stat_cards(s)}</div>
     </div>
@@ -1195,7 +1248,7 @@ def florida_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
   <div class="callout">Florida's certification is <strong>sworn</strong>: the {esc(s["total"])} hours are attested before a
   notary or a license examiner. That is why the day/night split matters from the first drive; the number you
   swear to should be one you can back up with dated entries.</div>
-
+{inline_cta("Florida", "guide-fl-deep", "Track your Florida hours free on iPhone")}
   <h2>The rule in three lines</h2>
   <table>
     <tr><th scope="row">Supervised practice</th><td>{esc(s["total"])} hours, of which {esc(s["night"])} at night</td></tr>
@@ -1221,9 +1274,122 @@ def florida_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
   </ul>
   <p>Driving Log does these for Florida and links the rule to its source. See the
   <a href="/guides/florida-learners-permit-driving-hours.html">Florida guide</a> for the full summary.</p>
+
+  <h2>A filled-in example: what the log should look like</h2>
+  <p>Four illustrative entries for a learner licensed on 2 March. Night drives only start once the
+  first {esc(s["night_blackout_months"])} months are over.</p>
+  <table>
+    <tr><th scope="col">Date</th><th scope="col">Time</th><th scope="col">Driven</th><th scope="col">Day / night</th><th scope="col">Running total</th></tr>
+    <tr><td>Sat 14 Mar</td><td>9:10–10:00 am</td><td>50 min</td><td>day</td><td>0 h 50 min day</td></tr>
+    <tr><td>Sun 5 Apr</td><td>2:00–3:30 pm</td><td>1 h 30 min</td><td>day</td><td>2 h 20 min day</td></tr>
+    <tr><td>Tue 9 Jun</td><td>8:45–9:30 pm</td><td>45 min</td><td>night</td><td>0 h 45 min night</td></tr>
+    <tr><td>Thu 18 Jun</td><td>9:00–9:40 pm</td><td>40 min</td><td>night</td><td>1 h 25 min night</td></tr>
+  </table>
+
+  <h2>Mistakes that make the Florida certification hard to swear to</h2>
+  <ul>
+    <li><strong>Night entries inside the daylight-only window.</strong> A night drive dated in the first {esc(s["night_blackout_months"])} months contradicts the licence conditions.</li>
+    <li><strong>Reaching 50 before reaching 10 at night.</strong> The night hours are a separate minimum; 45 day hours and 5 night hours is not done.</li>
+    <li><strong>Signing the certification at home.</strong> It is sworn in front of the notary or the license examiner; sign it there.</li>
+    <li><strong>A log with totals but no dates.</strong> The log is what backs up the sworn number; keep every entry dated.</li>
+  </ul>
+{sheet_link("Florida")}
 {sources_block(s, verified_on)}
 {cta_block("Florida", "guide-fl-deep")}
   <p class="state-nav"><a href="/guides/florida-learners-permit-driving-hours.html">← Florida guide</a><a href="/guides/">All state guides →</a></p>
+  </main>"""
+    return slug, page_shell(title, description, canonical, body, STATE_DISCLAIMER), title
+
+
+def log_sheet_page(code: str, s: dict, verified_on: str) -> tuple[str, str, str]:
+    """A blank, printable driving log for one state.
+
+    Google's own query data for this site is dominated by "<state> driving log sheet" searches:
+    families want paper. This page gives them a dated sheet built from the verified rule data,
+    says plainly that it is not the state's form, and links the form and the app.
+    """
+    name = s["name"]
+    slug = sheet_slug_for(name)
+    title = f"{name} driving log sheet (printable)"
+    description = (
+        f"Free printable {name} driving log sheet: dated entries, day and night minutes and a "
+        "supervising-adult signature block. Print it or save it as a PDF."
+    )
+    canonical = f"{BASE_URL}/guides/{slug}.html"
+    guide = slug_for(code, name)
+
+    if s.get("no_hour_requirement"):
+        target_line = (
+            f"{esc(name)}'s cited licensing source sets no numeric practice minimum; log the drives "
+            "anyway so the record exists if it is asked for."
+        )
+    else:
+        target_line = f"Target: <strong>{esc(target_hours(s))}</strong>"
+        if s.get("night"):
+            target_line += f", of which <strong>{esc(target_night_hours(s))} at night</strong>"
+        if s.get("daytime_minutes"):
+            target_line += f"; at least {s['daytime_minutes'] / 60:g} hours in daytime"
+        target_line += "."
+    rules = []
+    if s.get("daily_cap"):
+        rules.append(f"Only {esc(s['daily_cap'])} hours per day count toward the total.")
+    if s.get("weekly_cap"):
+        rules.append(f"Only {esc(s['weekly_cap'])} hours per week count toward the total.")
+    if s.get("min_days"):
+        rules.append(f"Practice on at least {esc(s['min_days'])} different days.")
+    if s.get("night_definition"):
+        rules.append(f"Night means {esc(s['night_definition'])}.")
+    if s.get("night_blackout_months"):
+        rules.append(f"Daylight-only driving for the first {esc(s['night_blackout_months'])} months of the permit.")
+    if s.get("signature") == "per_entry":
+        rules.append("The supervising adult signs each entry: use the initials column and sign the certification.")
+    elif s.get("signature") == "notarized":
+        rules.append("The state certification is sworn before a notary or examiner; this sheet is your supporting record.")
+    rules_html = "".join(f"<li>{rule}</li>" for rule in rules)
+    rules_block = f"<ul class=\"sheet-rules\">{rules_html}</ul>" if rules else ""
+
+    form_line = (
+        f"The official {esc(name)} paperwork is <strong>{esc(s['output'])}</strong>."
+        if s.get("output")
+        else f"The verified data does not name a separate {esc(name)} log form."
+    )
+    rows = "\n".join(
+        "    <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>"
+        for _ in range(18)
+    )
+    body = f"""  <section class="guide-hero">
+    <div class="wrap narrow">
+      <p class="crumbs"><a href="/">Driving Log</a> › <a href="/guides/">State guides</a> › <a href="/guides/{guide}.html">{esc(name)}</a> › Log sheet</p>
+      <h1>{esc(name)} driving log sheet</h1>
+      <p class="lede">{target_line}</p>
+      <p class="crumbs">Built from official {esc(name)} sources checked on {esc(verified_on)}. Not an official state form.</p>
+      <div class="sheet-actions no-print">
+        <button class="btn" type="button" onclick="window.print()">Print or save as PDF</button>
+        <a class="btn secondary" href="/guides/{guide}.html">Read the {esc(name)} rules</a>
+      </div>
+    </div>
+  </section>
+  <main class="wrap narrow prose sheet">
+  <div class="callout">{form_line} This sheet is <strong>not an official form</strong>: it is a dated
+  record you can keep as you go and copy onto, or attach to, whatever {esc(name)} asks for.
+  <a href="{esc(s["source"])}" rel="noopener">Official source</a>.</div>
+{rules_block}
+  <div class="sheet-head">
+    <div>Learner name</div><div>Permit / licence number</div>
+    <div>Supervising adult</div><div>Adult licence number</div>
+  </div>
+  <table class="log">
+    <tr><th scope="col">Date</th><th scope="col">Start</th><th scope="col">End</th><th scope="col">Total min</th><th scope="col">Night min</th><th scope="col">Road / weather</th><th scope="col">Adult initials</th></tr>
+{rows}
+    <tr><th scope="row">Page totals</th><td></td><td></td><td></td><td></td><td colspan="2"></td></tr>
+  </table>
+  <p class="sheet-cert">I confirm that the drives listed above took place as recorded and that I supervised them.</p>
+  <div class="signature">
+    <div>Supervising adult signature</div><div>Date</div>
+    <div>Learner signature</div><div>Date</div>
+  </div>
+{inline_cta(name, f"sheet-{code.lower()}", "Skip the pen: the app keeps this log for you")}
+  <p class="state-nav no-print"><a href="/guides/{guide}.html">← {esc(name)} guide</a><a href="/guides/">All state guides →</a></p>
   </main>"""
     return slug, page_shell(title, description, canonical, body, STATE_DISCLAIMER), title
 
@@ -1262,6 +1428,7 @@ def index_page(entries: list[tuple[str, str, str]], verified_on: str) -> str:
     <h2 id="practical-guides">Practical guides to logging your hours</h2>
     {detailed_guide_link("TX")}
     {detailed_guide_link("FL")}
+    <p>Every state guide links a free printable driving log sheet with day and night columns and a signature block.</p>
   </section>
   <div class="callout" style="margin-top:28px"><strong>Choosing or switching apps?</strong>
     <a href="/guides/best-driving-log-apps-permit-hours.html">Best driving log apps for permit hours (2026)</a> ·
@@ -1290,10 +1457,14 @@ def main() -> None:
     states, verified_on = load_states()
     OUT_DIR.mkdir(exist_ok=True)
     entries = []
+    sheet_urls = []
     for code, state in states.items():
         slug, html_text, title = state_page(code, state, verified_on, states)
         (OUT_DIR / f"{slug}.html").write_text(html_text, encoding="utf-8")
         entries.append((slug, state["name"], guide_summary(state)))
+        sheet_slug, sheet_html, _ = log_sheet_page(code, state, verified_on)
+        (OUT_DIR / f"{sheet_slug}.html").write_text(sheet_html, encoding="utf-8")
+        sheet_urls.append(f"{BASE_URL}/guides/{sheet_slug}.html")
     slug, html_text, title = comparison_page(verified_on)
     (OUT_DIR / f"{slug}.html").write_text(html_text, encoding="utf-8")
     entries.append((slug, title, ""))
@@ -1310,7 +1481,7 @@ def main() -> None:
         f"{BASE_URL}/guides/",
     ] + [
         f"{BASE_URL}/guides/{entry[0]}.html" for entry in entries
-    ] + content_urls
+    ] + content_urls + sheet_urls
     sitemap = "\n".join(
         ['<?xml version="1.0" encoding="UTF-8"?>',
          '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
@@ -1321,7 +1492,7 @@ def main() -> None:
     (REPO / "robots.txt").write_text(
         f"User-agent: *\nAllow: /\nSitemap: {BASE_URL}/sitemap.xml\n", encoding="utf-8"
     )
-    print(f"Generated {len(entries)} guide pages + {len(content_urls)} content pages + index + sitemap (rules verified {verified_on}).")
+    print(f"Generated {len(entries)} guide pages + {len(sheet_urls)} log sheets + {len(content_urls)} content pages + index + sitemap (rules verified {verified_on}).")
 
 
 if __name__ == "__main__":

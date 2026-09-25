@@ -190,6 +190,41 @@ p { margin: 0 0 1em; }
 .cta-panel .btn { background: #fff; color: var(--teal-dark) !important; border-color: #fff; }
 .cta-panel .btn.secondary { background: transparent; color: #fff !important; border-color: rgba(255,255,255,.6); }
 .cta-panel .fineprint { font-size: .85rem; color: #b9d9dd; margin: 14px 0 0; }
+.cta-inline { display: grid; grid-template-columns: 1fr 150px; gap: 18px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; margin: 26px 0; }
+.cta-inline h3 { margin: 0 0 .3em; font-size: 1.15rem; }
+.cta-inline p { color: var(--muted); margin: 0 0 12px; font-size: .95rem; }
+.cta-inline .phone { width: 150px; border-radius: 26px; box-shadow: 0 12px 30px rgba(14,42,52,.14); }
+@media (max-width: 560px) { .cta-inline { grid-template-columns: 1fr; } .cta-inline .phone { width: 180px; justify-self: center; } }
+
+/* Printable log sheets */
+.sheet-actions { display: flex; gap: 12px; flex-wrap: wrap; margin: 18px 0 0; }
+.sheet-actions .btn { font: inherit; font-weight: 700; cursor: pointer; }
+.sheet-rules { margin: 1em 0; padding-left: 20px; color: var(--muted); }
+.sheet-head { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 28px; margin: 18px 0; }
+.sheet-head div, .signature div { border-bottom: 1px solid var(--ink); padding-top: 24px; font-size: .88rem; color: var(--muted); }
+.sheet table.log { font-size: .9rem; }
+.sheet table.log th, .sheet table.log td { padding: 8px; height: 34px; border-right: 1px solid var(--line); }
+.sheet table.log th:last-child, .sheet table.log td:last-child { border-right: 0; }
+.sheet table.log th[scope=col] { background: #fbfdfd; font-weight: 650; }
+.sheet table.log th[scope=row] { width: auto; }
+.sheet-cert { margin-top: 18px; font-size: .95rem; }
+.signature { display: grid; grid-template-columns: 2fr 1fr; gap: 18px 28px; margin: 12px 0 28px; }
+@media print {
+  .topbar, footer, .cta-panel, .cta-inline, .sheet-actions, .state-nav, .crumbs, .no-print { display: none !important; }
+  body { background: #fff; color: #000; font-size: 10.5pt; }
+  .guide-hero { background: none; border: 0; padding: 0; }
+  .guide-hero h1 { font-size: 20pt; }
+  .wrap { max-width: none; padding: 0; }
+  .prose { padding-top: 8px; }
+  .prose table, .sheet table.log { border-radius: 0; border: 1px solid #000; }
+  .sheet table.log th, .sheet table.log td { border: 1px solid #000; height: 28px; padding: 4px 6px; }
+  .callout { background: none; border: 1px solid #000; padding: 8px 10px; font-size: 9.5pt; }
+  .sheet-rules { color: #000; font-size: 9.5pt; }
+  .sheet-head div, .signature div { color: #000; border-bottom-color: #000; }
+  .disclaimer { font-size: 8pt; margin-top: 1em; }
+  a { color: #000; text-decoration: none; }
+  @page { margin: 14mm; }
+}
 .disclaimer { font-size: .9rem; color: var(--muted); border-top: 1px solid var(--line); margin-top: 2.5em; padding-top: 1em; }
 .state-nav { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 28px; font-weight: 600; }
 

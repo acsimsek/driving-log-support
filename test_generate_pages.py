@@ -294,6 +294,20 @@ class GuideGeneratorTests(unittest.TestCase):
         _, texas, _ = pages.texas_deep_page(self.states["TX"], self.verified_on)
         self.assertIn("4 h 40 min counted", texas)
 
+    def test_analytics_is_never_silent(self):
+        privacy = (pathlib.Path(__file__).parent / "privacy.html").read_text(encoding="utf-8")
+        homepage = (pathlib.Path(__file__).parent / "index.html").read_text(encoding="utf-8")
+        _, page, _ = pages.state_page("FL", self.states["FL"], self.verified_on, self.states)
+        if pages.CLOUDFLARE_BEACON_TOKEN:
+            self.assertIn("cloudflareinsights.com/beacon.min.js", page)
+            self.assertIn("cloudflareinsights.com/beacon.min.js", homepage)
+            self.assertIn("Cloudflare Web Analytics", privacy)
+            self.assertNotIn("no analytics and no cookies", privacy)
+        else:
+            self.assertNotIn("cloudflareinsights", page)
+            self.assertNotIn("cloudflareinsights", homepage)
+            self.assertIn("no analytics and no cookies", privacy)
+
     def test_state_pages_lead_with_the_answer_and_ask_real_questions(self):
         _, texas, _ = pages.state_page("TX", self.states["TX"], self.verified_on, self.states)
         self.assertIn("How many supervised driving hours does Texas require?", texas)

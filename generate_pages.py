@@ -29,6 +29,10 @@ APP_STORE_BASE_URL = "https://apps.apple.com/app/apple-store/id6797597475"
 APP_STORE_PROVIDER_TOKEN = "129248493"
 SUPPORT_EMAIL = "support@acsimsek.com"
 FRESHNESS_LIMIT_DAYS = 90
+# Cloudflare Web Analytics beacon token (25 September 2026 decision). Empty means no
+# script is emitted; when set, privacy.html must describe the measurement too — the test
+# enforces that pairing so the site never measures silently.
+CLOUDFLARE_BEACON_TOKEN = "0a7da5a914d54a14a60343bf8d327f9b"
 
 # The only states.json fields a page may read. Everything else is internal.
 PUBLIC_FIELDS = {
@@ -618,6 +622,15 @@ GENERAL_DISCLAIMER = (
 )
 
 
+def analytics_snippet() -> str:
+    if not CLOUDFLARE_BEACON_TOKEN:
+        return ""
+    return (
+        '  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" '
+        f"data-cf-beacon='{{\"token\": \"{CLOUDFLARE_BEACON_TOKEN}\"}}'></script>\n"
+    )
+
+
 def page_shell(
     title: str,
     description: str,
@@ -644,7 +657,7 @@ def page_shell(
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
   <link rel="stylesheet" href="/site.css">
 {head_extra}
-</head>
+{analytics_snippet()}</head>
 <body>
   <header class="topbar">
     <div class="wrap">

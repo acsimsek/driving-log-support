@@ -211,19 +211,25 @@ p { margin: 0 0 1em; }
 .signature { display: grid; grid-template-columns: 2fr 1fr; gap: 18px 28px; margin: 12px 0 28px; }
 @media print {
   .topbar, footer, .cta-panel, .cta-inline, .sheet-actions, .state-nav, .crumbs, .no-print { display: none !important; }
-  body { background: #fff; color: #000; font-size: 10.5pt; }
+  body { background: #fff; color: #000; font-size: 9.5pt; line-height: 1.3; }
   .guide-hero { background: none; border: 0; padding: 0; }
-  .guide-hero h1 { font-size: 20pt; }
+  .guide-hero h1 { font-size: 17pt; margin-bottom: .2em; }
+  .guide-hero .lede { margin: 0 0 .4em; }
   .wrap { max-width: none; padding: 0; }
-  .prose { padding-top: 8px; }
-  .prose table, .sheet table.log { border-radius: 0; border: 1px solid #000; }
-  .sheet table.log th, .sheet table.log td { border: 1px solid #000; height: 28px; padding: 4px 6px; }
-  .callout { background: none; border: 1px solid #000; padding: 8px 10px; font-size: 9.5pt; }
-  .sheet-rules { color: #000; font-size: 9.5pt; }
-  .sheet-head div, .signature div { color: #000; border-bottom-color: #000; }
-  .disclaimer { font-size: 8pt; margin-top: 1em; }
+  .prose { padding-top: 4px; }
+  .prose h2 { font-size: 13pt; margin-top: 1em; }
+  .prose table, .sheet table.log { border-radius: 0; border: 1px solid #000; margin: .6em 0; }
+  .prose th, .prose td { padding: 5px 7px; }
+  .sheet table.log th, .sheet table.log td { border: 1px solid #000; height: 24px; padding: 3px 5px; font-size: 8.5pt; }
+  .callout { background: none; border: 1px solid #000; padding: 6px 8px; font-size: 8.5pt; }
+  .sheet-rules { color: #000; font-size: 8.5pt; margin: .5em 0; }
+  .sheet-head { gap: 6px 24px; margin: 10px 0; }
+  .sheet-head div, .signature div { color: #000; border-bottom-color: #000; padding-top: 16px; font-size: 8pt; }
+  .sheet-cert { margin: 8px 0 0; font-size: 8.5pt; }
+  .signature { grid-template-columns: 2fr 1fr 2fr 1fr; gap: 6px 18px; margin: 4px 0 8px; }
+  .disclaimer { font-size: 7pt; margin-top: .6em; padding-top: .4em; }
   a { color: #000; text-decoration: none; }
-  @page { margin: 14mm; }
+  @page { margin: 11mm 12mm; }
 }
 .disclaimer { font-size: .9rem; color: var(--muted); border-top: 1px solid var(--line); margin-top: 2.5em; padding-top: 1em; }
 .state-nav { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 28px; font-weight: 600; }

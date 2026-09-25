@@ -32,6 +32,9 @@ FRESHNESS_LIMIT_DAYS = 90
 # Cloudflare Web Analytics beacon token (25 September 2026 decision). Empty means no
 # script is emitted; when set, privacy.html must describe the measurement too — the test
 # enforces that pairing so the site never measures silently.
+# GoatCounter site code (25 September 2026 decision): counts App Store button taps as
+# events, which Cloudflare Web Analytics cannot. Empty means no script and no events.
+GOATCOUNTER_SITE = "drivinglog"
 CLOUDFLARE_BEACON_TOKEN = "0a7da5a914d54a14a60343bf8d327f9b"
 
 # The only states.json fields a page may read. Everything else is internal.
@@ -631,6 +634,28 @@ def analytics_snippet() -> str:
     )
 
 
+def goatcounter_snippet() -> str:
+    """Page views plus one event per App Store tap, keyed by the campaign code.
+
+    Cookieless; the event path lets the dashboard show which page or campaign produced the
+    tap without any personal data. Kept in one place so the privacy page can describe it.
+    """
+    if not GOATCOUNTER_SITE:
+        return ""
+    return (
+        "  <script>\n"
+        "    document.addEventListener('click', function (event) {\n"
+        "      var link = event.target.closest && event.target.closest('a[href*=\"apps.apple.com\"]');\n"
+        "      if (!link || !window.goatcounter || !window.goatcounter.count) { return; }\n"
+        "      var campaign = (link.href.match(/[?&]ct=([^&]+)/) || [])[1] || 'unknown';\n"
+        "      window.goatcounter.count({path: 'app-store-tap/' + campaign, title: document.title, event: true});\n"
+        "    }, true);\n"
+        "  </script>\n"
+        f'  <script data-goatcounter="https://{GOATCOUNTER_SITE}.goatcounter.com/count" '
+        'async src="//gc.zgo.at/count.js"></script>\n'
+    )
+
+
 def page_shell(
     title: str,
     description: str,
@@ -657,7 +682,7 @@ def page_shell(
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
   <link rel="stylesheet" href="/site.css">
 {head_extra}
-{analytics_snippet()}</head>
+{analytics_snippet()}{goatcounter_snippet()}</head>
 <body>
   <header class="topbar">
     <div class="wrap">

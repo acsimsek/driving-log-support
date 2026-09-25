@@ -11,6 +11,15 @@
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
   <link rel="stylesheet" href="/site.css">
   <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "0a7da5a914d54a14a60343bf8d327f9b"}'></script>
+  <script>
+    document.addEventListener('click', function (event) {
+      var link = event.target.closest && event.target.closest('a[href*="apps.apple.com"]');
+      if (!link || !window.goatcounter || !window.goatcounter.count) { return; }
+      var campaign = (link.href.match(/[?&]ct=([^&]+)/) || [])[1] || 'unknown';
+      window.goatcounter.count({path: 'app-store-tap/' + campaign, title: document.title, event: true});
+    }, true);
+  </script>
+  <script data-goatcounter="https://drivinglog.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
 <body>
   <header class="topbar">
@@ -50,7 +59,7 @@
     <p>You can turn sharing off in Profile at any time. This stops new collection, cancels pending uploads, and discards the local unsent queue. Data already sent cannot be recalled by the app. Enabling sharing again uses a new random identifier. TelemetryDeck processes and retains previously received events under its <a href="https://telemetrydeck.com/privacy/">privacy policy</a>; see its <a href="https://telemetrydeck.com/docs/guides/privacy-faq/">privacy FAQ</a> for retention information. All app features remain available when analytics is off.</p>
 
     <h2>This website</h2>
-    <p>This website uses Cloudflare Web Analytics to count visits and page views and measure page performance. It sets no cookies, does not fingerprint devices and does not identify visitors; Cloudflare processes the data under its <a href="https://www.cloudflare.com/privacypolicy/">privacy policy</a>. The site has no forms. If you email us to join the Android waitlist, we keep your address only to send a single notification if an Android version ships. It is never shared or added to any other list, and it is deleted on request — reply "remove" at any time.</p>
+    <p>This website uses Cloudflare Web Analytics to count visits and page views and measure page performance. It also uses GoatCounter to count page views and taps on the App Store buttons, so we can see which guides lead people to the app. Neither service sets cookies, fingerprints devices or identifies visitors; Cloudflare processes its data under its <a href="https://www.cloudflare.com/privacypolicy/">privacy policy</a> and GoatCounter under its <a href="https://www.goatcounter.com/help/privacy">privacy policy</a>. The site has no forms. If you email us to join the Android waitlist, we keep your address only to send a single notification if an Android version ships. It is never shared or added to any other list, and it is deleted on request — reply "remove" at any time.</p>
 
     <h2>External links</h2>
     <p>The app and this site contain links to official government sources. Opening a link leaves the app or site and is governed by the destination website's privacy practices.</p>

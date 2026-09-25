@@ -17,6 +17,15 @@
   <link rel="stylesheet" href="/site.css">
   <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How many driving hours do you need in District of Columbia?", "acceptedAnswer": {"@type": "Answer", "text": "District of Columbia requires 50 hours, including 10 at night."}}, {"@type": "Question", "name": "How long must the permit be held in District of Columbia?", "acceptedAnswer": {"@type": "Answer", "text": "The default period is 6 calendar months, starting at permit issue date. Check the applicant and licence-stage paths below for exceptions."}}, {"@type": "Question", "name": "Does District of Columbia accept a printed log from an app?", "acceptedAnswer": {"@type": "Answer", "text": "District of Columbia names Certification of Eligibility for Provisional License (40 hours) + Certification of Eligibility for Full License with Conditions (10 night hours). An app printout is a supporting record, not that official form; check the source below for what your office accepts."}}]}</script>
   <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "0a7da5a914d54a14a60343bf8d327f9b"}'></script>
+  <script>
+    document.addEventListener('click', function (event) {
+      var link = event.target.closest && event.target.closest('a[href*="apps.apple.com"]');
+      if (!link || !window.goatcounter || !window.goatcounter.count) { return; }
+      var campaign = (link.href.match(/[?&]ct=([^&]+)/) || [])[1] || 'unknown';
+      window.goatcounter.count({path: 'app-store-tap/' + campaign, title: document.title, event: true});
+    }, true);
+  </script>
+  <script data-goatcounter="https://drivinglog.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
 <body>
   <header class="topbar">

@@ -298,6 +298,14 @@ class GuideGeneratorTests(unittest.TestCase):
         privacy = (pathlib.Path(__file__).parent / "privacy.html").read_text(encoding="utf-8")
         homepage = (pathlib.Path(__file__).parent / "index.html").read_text(encoding="utf-8")
         _, page, _ = pages.state_page("FL", self.states["FL"], self.verified_on, self.states)
+        if pages.GOATCOUNTER_SITE:
+            self.assertIn("gc.zgo.at/count.js", page)
+            self.assertIn("gc.zgo.at/count.js", homepage)
+            self.assertIn("app-store-tap/", page)
+            self.assertIn("GoatCounter", privacy)
+        else:
+            self.assertNotIn("goatcounter", page)
+            self.assertNotIn("goatcounter", homepage)
         if pages.CLOUDFLARE_BEACON_TOKEN:
             self.assertIn("cloudflareinsights.com/beacon.min.js", page)
             self.assertIn("cloudflareinsights.com/beacon.min.js", homepage)

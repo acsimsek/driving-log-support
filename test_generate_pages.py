@@ -240,6 +240,14 @@ class GuideGeneratorTests(unittest.TestCase):
             self.assertNotIn("DMV-approved", page)
             self.assertIn("not legal advice", page)
             self.assertIn("ct=", page)
+        for code, builder, claim in (
+            ("CA", pages.california_deep_page, "The DL 603 log is optional"),
+            ("NC", pages.north_carolina_deep_page, "No more than 10 hours per week count"),
+            ("IL", pages.illinois_deep_page, "consent to licensing is a separate step"),
+        ):
+            _, page, _ = builder(self.states[code], self.verified_on)
+            self.assertIn(claim, page)
+            self.assertIn(pages.detailed_guide_link(code), pages.state_page(code, self.states[code], self.verified_on, self.states)[1])
         _, comparison, _ = pages.comparison_hub_page(self.verified_on)
         self.assertIn("Disclosure", comparison)
         self.assertIn(pages.COMPETITOR_SNAPSHOT_DATE, comparison)
@@ -282,7 +290,9 @@ class GuideGeneratorTests(unittest.TestCase):
         self.assertIn("@media print", (pages.REPO / "site.css").read_text())
 
     def test_deep_guides_show_the_app_before_the_fold_and_a_worked_example(self):
-        for code, builder in (("TX", pages.texas_deep_page), ("FL", pages.florida_deep_page)):
+        for code, builder in (("TX", pages.texas_deep_page), ("FL", pages.florida_deep_page),
+                              ("CA", pages.california_deep_page), ("NC", pages.north_carolina_deep_page),
+                              ("IL", pages.illinois_deep_page)):
             _, page, title = builder(self.states[code], self.verified_on)
             self.assertIn("cta-inline", page)
             self.assertIn("free on iPhone", page)

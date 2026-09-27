@@ -9,7 +9,7 @@ Contract, agreed 2 September 2026:
   one failure mode this site must not have.
 - Every page names the official source it was checked against, says the app is not an official
   form and not legal advice, and shows two CTAs: the App Store link and an Android waitlist
-  mailto (the site itself collects nothing; the email lands at the existing support address).
+  mailto (no form submission; the email lands at the existing support address).
 """
 
 from __future__ import annotations
@@ -601,7 +601,7 @@ def cta_block(state_name: str | None, campaign: str) -> str:
     return f"""
   <div class="cta-panel">
     <h2>Keep the log{where} with Driving Log</h2>
-    <p>Free for one learner, no account, nothing collected. Every drive is stored on your iPhone and, when enabled, in your own private iCloud.</p>
+    <p>Free for one learner, no account required. Basic app usage sharing is optional and off by default. Every drive is stored on your iPhone and, when enabled, in your own private iCloud.</p>
     <div class="btn-row">
       <a class="btn" href="{esc(campaign_url(campaign))}">Download free for iPhone</a>
       <a class="btn secondary" href="{esc(mailto)}">Android — join the waitlist</a>
@@ -924,7 +924,7 @@ def inline_cta(state_name: str, campaign: str, headline: str) -> str:
     <div>
       <h3>{esc(headline)}</h3>
       <p>Driving Log keeps the {esc(state_name)} rules, splits day and night minutes and prints a dated
-      record with a signature block. Free for one learner, no account, nothing collected.</p>
+      record with a signature block. Free for one learner, no account required. Basic app usage sharing is optional and off by default.</p>
       <a class="btn" href="{esc(campaign_url(campaign))}">Download free for iPhone</a>
     </div>
     <div class="phone"><picture><source srcset="/assets/progress.webp" type="image/webp"><img src="/assets/progress.png" alt="Driving Log progress screen with logged time, counted time and remaining requirements" width="720" height="1564" loading="lazy"></picture></div>
@@ -933,6 +933,9 @@ def inline_cta(state_name: str, campaign: str, headline: str) -> str:
 
 def detailed_guide_link(code: str) -> str:
     guides = {
+        "CA": ("california-50-hour-log-dl-603-and-permit-signature", "California: DL 603 and the permit signature"),
+        "NC": ("north-carolina-60-hour-log-weekly-cap", "North Carolina: the 60-hour log and weekly cap"),
+        "IL": ("illinois-50-hour-log-and-parent-affidavit", "Illinois: the practice log and parent affidavit"),
         "TX": ("texas-30-hour-log-what-counts", "Texas 30-hour log: what counts toward the total"),
         "FL": ("florida-50-hour-log-notarized-certification", "Florida 50-hour log and notarized certification"),
     }
@@ -1339,6 +1342,92 @@ def florida_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
     return slug, page_shell(title, description, canonical, body, STATE_DISCLAIMER), title
 
 
+
+def practice_deep_shell(s: dict, verified_on: str, slug: str, title: str,
+                        description: str, answer: str, details: str) -> tuple[str, str, str]:
+    name, code = s["name"], s["code"].lower()
+    state_slug = slug_for(s["code"], s["name"])
+    body = f"""<section class="guide-hero"><div class="wrap narrow">
+      <p class="crumbs"><a href="/">Driving Log</a> › <a href="/guides/">State guides</a> › {esc(name)} practice log</p>
+      <h1>{esc(title)}</h1><p class="lede">For the teen learner-permit path. Rule data verified {esc(verified_on)}; linked paperwork checked 27 September 2026.</p>
+      <div class="stats">{stat_cards(s)}</div></div></section>
+    <main class="wrap narrow prose"><div class="callout">{answer}</div>
+{inline_cta(name, f"guide-{code}-deep", f"Track your {name} hours free on iPhone")}
+{details}
+{sheet_link(name)}
+{sources_block(s, verified_on)}
+{cta_block(name, f"guide-{code}-deep")}
+    <p class="state-nav"><a href="/guides/{state_slug}.html">← {esc(name)} guide</a><a href="/guides/">All state guides →</a></p></main>"""
+    return slug, page_shell(title, description, f"{BASE_URL}/guides/{slug}.html", body, STATE_DISCLAIMER), title
+
+
+def california_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
+    answer = f"California requires {s['total']} hours of supervised practice, including {s['night']} at night. The DL 603 log is optional; the parent or guardian certifies completion by signing the instruction permit."
+    details = f"""<h2>Which paper does what?</h2>
+    <p>The <a href="{esc(s['secondary_source'])}">DMV Parent-Teen Training Guide (DL 603)</a> includes a practice log. Use it to organise dates and day/night time, or keep another accurate record. An app printout helps you total the practice; it does not replace the permit signature.</p>
+    <p>Before the driving test, hold the permit for at least {s['permit_months']} months and complete the practice. The parent or guardian signs the instruction permit to certify it. Follow the <a href="https://www.dmv.ca.gov/portal/handbook/california-driver-handbook/getting-an-instruction-permit-and-drivers-license/">DMV application checklist</a> for the remaining course, training and test requirements.</p>
+    <h2>A filled-in example: separate practice from certification</h2>
+    <p>Illustrative entries, not a completed application. Classify night using the actual conditions; a clock time alone does not establish darkness.</p>
+    <table><tr><th>Date</th><th>Practice</th><th>Day</th><th>Night</th><th>Running total</th></tr>
+    <tr><td>7 Sep</td><td>Neighbourhood turns</td><td>45 min</td><td>0 min</td><td>45 min</td></tr>
+    <tr><td>9 Sep</td><td>Practice after dark</td><td>0 min</td><td>30 min</td><td>1 h 15 min</td></tr>
+    <tr><td>12 Sep</td><td>Lane changes</td><td>60 min</td><td>0 min</td><td>2 h 15 min</td></tr></table>
+    <h2>Mistakes that leave the paperwork unfinished</h2><ul>
+    <li>Taking a log printout but leaving the certification on the permit unsigned.</li>
+    <li>Reaching {s['total']} total hours without {s['night']} night hours.</li>
+    <li>Treating the hour target as permission to skip the {s['permit_months']}-month holding period.</li>
+    <li>Calling an app-generated supporting record a DMV form.</li></ul>
+    <p>Keep the running log during practice; check the permit signature and DMV checklist before the appointment. The log and the certification serve different purposes.</p>"""
+    return practice_deep_shell(s, verified_on, "california-50-hour-log-dl-603-and-permit-signature",
+        "California 50-hour log: DL 603 and the permit signature",
+        "California's 50-hour practice log: 10 night hours, the optional DL 603 log, the required permit signature and the six-month holding period.", answer, details)
+
+
+def north_carolina_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
+    cap, total = s['weekly_cap'], s['total']
+    answer = f"For the Level 1 to Level 2 step, North Carolina requires {total} logged hours, including {s['night']} at night. No more than {cap} hours per week count; the Level 1 permit must also be held for {s['permit_months']} months."
+    details = f"""<h2>The log and the calendar are separate requirements</h2>
+    <p>{esc(s['output'])}. Use the <a href="https://www.ncdot.gov/dmv/downloads/Documents/DL-4A.pdf">NCDMV DL-4A log</a>, with the supervising driver's signature. The Level 2 page accepts digital and printed copies. {esc(s['permit_curfew'])}</p>
+    <p>The weekly limit comes from <a href="{esc(s['secondary_source'])}">G.S. 20-11(d)(5)</a>. Keep all practice entries but distinguish driven time from credited time. Extra time in a busy week cannot be moved to an empty week.</p>
+    <h2>A filled-in example: how the weekly cap changes the total</h2>
+    <p>Illustrative planning blocks, not a definition of NCDMV's week boundary. At the {cap}-hour cap, {total} hours need at least {total // cap} weekly credit blocks; this does not shorten the {s['permit_months']}-month permit requirement.</p>
+    <table><tr><th>Weekly block</th><th>Driven</th><th>Counted</th><th>Cumulative counted</th></tr>
+    <tr><td>1</td><td>{cap + 2} h</td><td>{cap} h</td><td>{cap} h</td></tr>
+    <tr><td>2</td><td>8 h</td><td>8 h</td><td>{cap + 8} h</td></tr>
+    <tr><td>3</td><td>{cap + 1} h</td><td>{cap} h</td><td>{cap * 2 + 8} h</td></tr></table>
+    <p>The example is not a full log: retain individual dates, times, night entries and signatures in DL-4A. Check the official form when assigning entries to weeks.</p>
+    <h2>Mistakes that overstate progress</h2><ul>
+    <li>Counting all hours in a week that exceeds {cap} hours.</li>
+    <li>Finishing total time but missing the separate {s['night']}-hour night target.</li>
+    <li>Scheduling a Level 2 application before the {s['permit_months']}-month holding period ends.</li>
+    <li>Presenting unsigned entries or treating this supporting sheet as the state's form.</li></ul>"""
+    return practice_deep_shell(s, verified_on, "north-carolina-60-hour-log-weekly-cap",
+        "North Carolina 60-hour log: the weekly cap explained",
+        "North Carolina's 60-hour driving log: 10 night hours, a 10-hour weekly cap, the nine-month permit period and a worked planning example.", answer, details)
+
+
+def illinois_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
+    answer = f"Illinois teen drivers need {s['total']} practice hours, including {s['night']} at night, and a {s['permit_months']}-month permit period. A practice log supports the parent's certification; consent to licensing is a separate step."
+    details = f"""<h2>Log, certification and parental consent</h2>
+    <p>The <a href="https://www.ilsos.gov/publications/pdf_publications/dsd_x152.pdf">DSD X 152 practice log</a> is supplied for convenience. It records dates, locations, weather, day/night time and initials, with a final signature line. Keep it accurate as you practise.</p>
+    <p>The <a href="https://www.ilsos.gov/content/dam/publications/pdf_publications/dsd_a217.pdf">Parent-Teen Driving Guide</a> helps families plan practice. At licensing, the parent or guardian certifies the completed hours. Under the <a href="{esc(s['source'])}">GDL instructions</a>, they accompany the teen to provide written consent, or complete and notarize the <a href="https://www.ilsos.gov/publications/pdf_publications/dsd_x174.pdf">Affidavit/Consent for Minor to Drive</a>. Do not assume that signing an app printout completes both steps.</p>
+    <h2>A filled-in example: a useful supporting record</h2>
+    <p>Illustrative entries show how a record can preserve the day/night split. Put the responsible adult's initials beside real entries; do not copy this example as completed practice.</p>
+    <table><tr><th>Date</th><th>Location / conditions</th><th>Day</th><th>Night</th><th>Running total</th></tr>
+    <tr><td>5 Sep</td><td>Residential / dry</td><td>40 min</td><td>0 min</td><td>40 min</td></tr>
+    <tr><td>8 Sep</td><td>Local streets / after dark</td><td>0 min</td><td>35 min</td><td>1 h 15 min</td></tr>
+    <tr><td>12 Sep</td><td>Highway / dry</td><td>45 min</td><td>0 min</td><td>2 h</td></tr></table>
+    <h2>Mistakes that confuse the documents</h2><ul>
+    <li>Confusing the convenience log with parental consent to licensing.</li>
+    <li>Reaching {s['total']} hours without {s['night']} at night, or overlooking the {s['permit_months']}-month permit period.</li>
+    <li>Assuming every family needs a notarized affidavit even when the parent attends and supplies consent.</li>
+    <li>Counting instructor time as part of the separate supervised practice shown on DSD X 152.</li></ul>
+    <p>Use the state checklist before your visit. Our printable sheet is a supporting record, not a state-issued document or a substitute for required signatures.</p>"""
+    return practice_deep_shell(s, verified_on, "illinois-50-hour-log-and-parent-affidavit",
+        "Illinois 50-hour log and parent affidavit: what to sign",
+        "Illinois practice hours explained: 50 total, 10 at night, a nine-month permit, the practice log, parent certification and consent affidavit.", answer, details)
+
+
 def log_sheet_page(code: str, s: dict, verified_on: str) -> tuple[str, str, str]:
     """A blank, printable driving log for one state.
 
@@ -1437,6 +1526,9 @@ def content_pages(states: dict, verified_on: str) -> list[tuple[str, str, str]]:
         comparison_hub_page(verified_on),
         texas_deep_page(states["TX"], verified_on),
         florida_deep_page(states["FL"], verified_on),
+        california_deep_page(states["CA"], verified_on),
+        north_carolina_deep_page(states["NC"], verified_on),
+        illinois_deep_page(states["IL"], verified_on),
     ]
 
 
@@ -1466,6 +1558,9 @@ def index_page(entries: list[tuple[str, str, str]], verified_on: str) -> str:
     <h2 id="practical-guides">Practical guides to logging your hours</h2>
     {detailed_guide_link("TX")}
     {detailed_guide_link("FL")}
+    {detailed_guide_link("CA")}
+    {detailed_guide_link("NC")}
+    {detailed_guide_link("IL")}
     <p>Every state guide links a free printable driving log sheet with day and night columns and a signature block.</p>
   </section>
   <div class="callout" style="margin-top:28px"><strong>Choosing or switching apps?</strong>

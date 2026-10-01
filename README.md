@@ -35,16 +35,23 @@ fields that must never be published.
 
 ## Refreshing product screenshots
 
-The homepage uses real simulator captures from the iOS repository, not hand-built mockups. After
-an app UI change, run `./scripts/capture-app-store-screenshots.sh` in `../driving-log-ios`, then
-replace and resize these source files to 720 pixels wide and generate matching WebP files:
+The homepage uses real simulator captures from the iOS repository, not hand-built mockups.
+The 1.5 refresh (1 October 2026) uses these reviewed sources:
 
-- `01-dashboard.png` -> `assets/dashboard.png`
-- `02-progress-details.png` -> `assets/progress.png`
-- `03-driving-log-pro.png` -> `assets/pro.png`
-- `04-add-a-drive.png` -> `assets/add-drive.png`
+| Website asset | Source in `../driving-log-ios/` |
+| --- | --- |
+| `assets/dashboard.png` | `app-store/screenshots/candidate-1.5-2026-09-30/raw/store15-dashboard.png` |
+| `assets/progress.png` | `app-store/screenshots/candidate-1.5-2026-09-30/raw/store15-counts.png` |
+| `assets/pro.png` | `app-store/screenshots/candidate-1.5-2026-09-30/raw/store15-pro.png` |
+| `assets/add-drive.png` | `app-store/design/review-1.5-2026-09-30/editor-dark.png` |
 
-The PNG sources live under
-`../driving-log-ios/app-store/screenshots/raw/en-US/6.9-inch/`. Keep the homepage image dimensions
-and alt text in sync when the captures change, compress each PNG to the same-named `.webp` file,
-then run the site tests before publishing. The PNG remains the compatibility fallback.
+All four are real 1.5 dark-mode simulator screens with demo data. Dashboard and What counts
+show Texas; the progress alt text must not call this California. No pixel content is retouched.
+Resize proportionally with `sips --resampleWidth 720 SOURCE --out assets/NAME.png`, then
+encode WebP with `cwebp -q 85 assets/NAME.png -o assets/NAME.webp`. The resulting images
+are 720×1564; PNG remains the compatibility fallback. Homepage and generated guide image URLs
+use `?v=1.5` so browsers request the refreshed assets instead of a cached old screenshot.
+
+After the next app UI change, capture the approved screens in the iOS repo under its disk guard
+and shared job lock. Update the source mapping, image dimensions, alt text and cache version;
+regenerate guides, run the site tests and review desktop/mobile previews before publishing.

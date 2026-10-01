@@ -40,17 +40,18 @@ The 1.5 refresh (1 October 2026) uses these reviewed sources:
 
 | Website asset | Source in `../driving-log-ios/` |
 | --- | --- |
-| `assets/dashboard.png` | `app-store/screenshots/candidate-1.5-2026-09-30/raw/store15-dashboard.png` |
-| `assets/progress.png` | `app-store/screenshots/candidate-1.5-2026-09-30/raw/store15-counts.png` |
-| `assets/pro.png` | `app-store/screenshots/candidate-1.5-2026-09-30/raw/store15-pro.png` |
-| `assets/add-drive.png` | `app-store/design/review-1.5-2026-09-30/editor-dark.png` |
+| `assets/dashboard.png` | `app-store/screenshots/site-light-1.5-2026-10-01/raw/store15-dashboard.png` |
+| `assets/progress.png` | `app-store/screenshots/site-light-1.5-2026-10-01/raw/store15-counts.png` |
+| `assets/pro.png` | `app-store/screenshots/site-light-1.5-2026-10-01/raw/store15-pro.png` |
+| `assets/add-drive.png` | `app-store/design/review-1.5-2026-09-30/editor-light.png` |
 
-All four are real 1.5 dark-mode simulator screens with demo data. Dashboard and What counts
-show Texas; the progress alt text must not call this California. No pixel content is retouched.
+All four are real 1.5 light-mode simulator screens with demo data. Dashboard and What counts
+show Texas; the dashboard capture starts without the rating reminder or Got it note. The
+progress alt text must not call this California. No pixel content is retouched.
 Resize proportionally with `sips --resampleWidth 720 SOURCE --out assets/NAME.png`, then
 encode WebP with `cwebp -q 85 assets/NAME.png -o assets/NAME.webp`. The resulting images
 are 720×1564; PNG remains the compatibility fallback. Homepage and generated guide image URLs
-use `?v=1.5` so browsers request the refreshed assets instead of a cached old screenshot.
+use `?v=1.5-light` so browsers request the refreshed assets instead of a cached old screenshot.
 
 After the next app UI change, capture the approved screens in the iOS repo under its disk guard
 and shared job lock. Update the source mapping, image dimensions, alt text and cache version;

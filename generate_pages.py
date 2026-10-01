@@ -927,7 +927,7 @@ def inline_cta(state_name: str, campaign: str, headline: str) -> str:
       record with a signature block. Free for one learner, no account required. Basic app usage sharing is optional and off by default.</p>
       <a class="btn" href="{esc(campaign_url(campaign))}">Download free for iPhone</a>
     </div>
-    <div class="phone"><picture><source srcset="/assets/progress.webp?v=1.5" type="image/webp"><img src="/assets/progress.png?v=1.5" alt="Driving Log progress screen with logged time, counted time and remaining requirements" width="720" height="1564" loading="lazy"></picture></div>
+    <div class="phone"><picture><source srcset="/assets/progress.webp?v=1.5-light" type="image/webp"><img src="/assets/progress.png?v=1.5-light" alt="Driving Log progress screen with logged time, counted time and remaining requirements" width="720" height="1564" loading="lazy"></picture></div>
   </aside>"""
 
 

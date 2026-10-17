@@ -249,6 +249,13 @@ class GuideGeneratorTests(unittest.TestCase):
             ("PA", pages.pennsylvania_deep_page, "needed only when the parent or guardian is not going"),
             ("GA", pages.georgia_deep_page, "DDS does not require a driving log"),
             ("GA", pages.georgia_deep_page, "1 year and 1 day"),
+            ("NY", pages.new_york_deep_page, "to <strong>every</strong> road test"),
+            ("NY", pages.new_york_deep_page, "It is a recommendation"),
+            ("OH", pages.ohio_deep_page, "BMV 5791"),
+            # Ohio's form names only its own log page or RoadReady Ohio; say so plainly.
+            ("OH", pages.ohio_deep_page, "copy the dated entries onto the form"),
+            ("MI", pages.michigan_deep_page, "30 minutes after sunset to 30 minutes before sunrise"),
+            ("VA", pages.virginia_deep_page, "goes to the in-car instructor"),
         ):
             _, page, _ = builder(self.states[code], self.verified_on)
             self.assertIn(claim, page)
@@ -300,6 +307,10 @@ class GuideGeneratorTests(unittest.TestCase):
         for page in (georgia_sheet, georgia_guide):
             self.assertNotIn("notar", page)
             self.assertIn("swears", page)
+        # Each sheet carries its state's own rules on screen, hidden in print.
+        self.assertIn('<section class="no-print">', pennsylvania)
+        self.assertIn("Pennsylvania rules to know before you print", pennsylvania)
+        self.assertIn("pennsylvania-65-hour-log-dl-180c-certification", pennsylvania)
         _, arkansas, _ = pages.log_sheet_page("AR", self.states["AR"], self.verified_on)
         self.assertIn("no numeric practice minimum", arkansas)
         # Every state guide must link its sheet, and the sheet must appear in print styles.
@@ -311,7 +322,9 @@ class GuideGeneratorTests(unittest.TestCase):
         for code, builder in (("TX", pages.texas_deep_page), ("FL", pages.florida_deep_page),
                               ("CA", pages.california_deep_page), ("NC", pages.north_carolina_deep_page),
                               ("IL", pages.illinois_deep_page), ("PA", pages.pennsylvania_deep_page),
-                              ("GA", pages.georgia_deep_page)):
+                              ("GA", pages.georgia_deep_page), ("NY", pages.new_york_deep_page),
+                              ("OH", pages.ohio_deep_page), ("MI", pages.michigan_deep_page),
+                              ("VA", pages.virginia_deep_page)):
             _, page, title = builder(self.states[code], self.verified_on)
             self.assertIn("cta-inline", page)
             self.assertIn("free on iPhone", page)

@@ -944,6 +944,10 @@ def detailed_guide_link(code: str) -> str:
         "FL": ("florida-50-hour-log-notarized-certification", "Florida 50-hour log and notarized certification"),
         "PA": ("pennsylvania-65-hour-log-dl-180c-certification", "Pennsylvania: the 65-hour log and DL-180C"),
         "GA": ("georgia-40-hour-driving-log-joshuas-law", "Georgia: the 40 hours and the parent's oath"),
+        "NY": ("new-york-50-hour-log-mv-262-certification", "New York: the MV-262 and the hours after sunset"),
+        "OH": ("ohio-50-hour-affidavit-bmv-5791", "Ohio: the BMV 5791 affidavit and night hours"),
+        "MI": ("michigan-50-hour-log-segment-2", "Michigan: 30 hours for Segment 2, 50 for the test"),
+        "VA": ("virginia-45-hour-log-parent-certification", "Virginia: the 45-hour log and who signs"),
     }
     if code not in guides:
         return ""
@@ -1538,6 +1542,202 @@ def georgia_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
         answer, details, paperwork_checked="17 October 2026")
 
 
+NY_MV262 = "https://dmv.ny.gov/forms/mv262.pdf"
+NY_PRE_LICENSING = "https://dmv.ny.gov/driver-license/complete-pre-licensing-requirements"
+NY_RESTRICTIONS = "https://dmv.ny.gov/forms/mv500h.pdf"
+
+
+def new_york_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
+    total, night, months = s["total"], s["night"], s["permit_months"]
+    answer = (
+        f"New York junior permit holders need {total} hours of supervised practice, at least {night} of "
+        f"them after sunset, and must wait {months} months from the permit date to schedule the road test. "
+        "A parent or guardian certifies the hours on form MV-262, which goes to the examiner at every road test."
+    )
+    details = f"""<h2>One form, two sections</h2>
+    <p>The <a href="{NY_MV262}">MV-262 Certification of Supervised Driving</a> (revision 3/25) certifies totals; DMV does not ask for the log itself, and the form has no notary step. A parent or guardian signs it. Hours driven in a certified driver education course or with a driving school count toward the {total}, and the school certifies those in its own section of the same form.</p>
+    <p>Bring the signed MV-262 to <strong>every</strong> road test, not only the first. Before the test you also need the 5-hour pre-licensing course certificate (MV-278) or a driver education completion certificate (MV-285) on file, as <a href="{NY_PRE_LICENSING}">DMV's pre-licensing page</a> explains. The form warns that false information on it may be a crime.</p>
+    <h2>Who can supervise, and where</h2>
+    <p>The supervisor must be at least 21 and hold a license valid in New York for that type of vehicle. New York also limits where and when permit holders drive (<a href="{NY_RESTRICTIONS}">DMV's learner permit restrictions</a>):</p>
+    <table><tr><th>Region</th><th>5 a.m. to 9 p.m.</th><th>9 p.m. to 5 a.m.</th></tr>
+    <tr><td>New York City</td><td>Only in a dual-control car, with a parent, guardian, driver education teacher or driving school instructor</td><td>No driving</td></tr>
+    <tr><td>Long Island</td><td>With a parent, guardian, driver education teacher or driving school instructor</td><td>No driving</td></tr>
+    <tr><td>Rest of the state</td><td>Any licensed supervisor aged 21 or older</td><td>Parent, guardian, driver education teacher or driving school instructor only</td></tr></table>
+    <p>For NYC and Long Island families this shapes the {night} night hours: they have to fall between sunset and 9 p.m. In June that window is about half an hour; from November to February it is several hours, so plan the after-sunset practice for the darker months.</p>
+    <h2>A filled-in example: keeping the after-sunset hours visible</h2>
+    <p>Illustrative entries for a Long Island learner, not a completed log. "After sunset" is the only night rule, so note the sunset time when it is close.</p>
+    <table><tr><th>Date</th><th>Time</th><th>Driven</th><th>After sunset</th><th>Running total</th></tr>
+    <tr><td>Sat 7 Nov</td><td>10:00–11:15 am</td><td>1 h 15 min</td><td>0 min</td><td>1 h 15 min</td></tr>
+    <tr><td>Tue 10 Nov</td><td>5:00–6:00 pm (sunset 4:41)</td><td>1 h</td><td>1 h</td><td>2 h 15 min</td></tr>
+    <tr><td>Thu 12 Nov</td><td>3:45–5:15 pm (sunset 4:39)</td><td>1 h 30 min</td><td>36 min</td><td>3 h 45 min</td></tr>
+    <tr><td>Sun 15 Nov</td><td>7:15–8:30 pm</td><td>1 h 15 min</td><td>1 h 15 min</td><td>5 h</td></tr></table>
+    <h2>What an app should do for New York</h2><ul>
+    <li>Count after-sunset minutes separately and show how many of the {night} remain.</li>
+    <li>Count {months} months from the permit date before suggesting a road test date.</li>
+    <li>Print a dated record to keep behind the MV-262. No app produces the MV-262 itself.</li></ul>
+    <p>Driving Log does these for New York and links each rule to its source.</p>
+    <h2>Mistakes that delay the road test</h2><ul>
+    <li>Leaving the MV-262 at home for a second or third road test attempt.</li>
+    <li>Reaching {total} hours with fewer than {night} after sunset.</li>
+    <li>Planning NYC or Long Island night practice after 9 p.m., when permit holders may not drive at all.</li>
+    <li>Treating the Driver's Manual's suggested 10 hours in moderate to heavy traffic as the requirement. It is a recommendation; the certified numbers are {total} and {night}.</li>
+    <li>Forgetting the MV-278 or MV-285 certificate. The MV-262 does not replace it.</li></ul>"""
+    return practice_deep_shell(s, verified_on, "new-york-50-hour-log-mv-262-certification",
+        "New York 50-hour driving log: MV-262 and the hours after sunset",
+        f"New York's {total}-hour practice rule: {night} hours after sunset, the MV-262 you bring to every road "
+        "test, who can supervise, and the NYC and Long Island time limits.",
+        answer, details, paperwork_checked="17 October 2026")
+
+
+MI_LOG = (
+    "https://www.michigan.gov/-/media/Project/Websites/sos/License-and-ID/New-drivers/"
+    "Michigan-Supervised-Driving-Log.pdf"
+)
+MI_NEW_DRIVERS = "https://www.michigan.gov/sos/license-id/new-drivers-under-18"
+
+
+def michigan_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
+    # states.json still links the retired 01gwizdz log URL, which now returns 404; link the
+    # current official log until the rule data is updated (task filed 17 October 2026).
+    s = {**s, "source": MI_LOG}
+    total, night = s["total"], s["night"]
+    seg = s["milestone"]["before_segment_2"]
+    answer = (
+        f"Michigan teens on a Level 1 license log supervised driving twice over: {seg['total']} hours, "
+        f"including {seg['night']} at night, before starting Segment 2, and {total} hours, including "
+        f"{night} at night, before the driving skills test. The parent or guardian signs the log, and it is "
+        "shown to the Segment 2 instructor and again to the test examiner."
+    )
+    details = f"""<h2>Two checkpoints on one log</h2>
+    <table><tr><th>Checkpoint</th><th>Hours logged</th><th>Also required</th></tr>
+    <tr><td>Before Segment 2</td><td>{seg['total']} hours, {seg['night']} at night</td><td>Level 1 license held 3 consecutive months; show the log to the Segment 2 instructor</td></tr>
+    <tr><td>Before the driving skills test</td><td>{total} hours, {night} at night</td><td>Segment 2 completed, Level 1 held 6 months, no violations in the previous 90 days; show the signed log to the examiner</td></tr></table>
+    <p>The state's <a href="{MI_LOG}">Michigan Supervised Driving Log</a> (Rev. 08/2019) has columns for the date, lesson number, day hours, night hours, weather and the supervisor's initials. The Secretary of State says other log formats are accepted. At the skills test the parent or guardian also signs a certification on the score sheet.</p>
+    <p>One wrinkle: the form's Segment 2 block asks for "30 minimum" daytime hours and "2 minimum" nighttime hours, while the instructions and the statute say 30 hours <em>including</em> 2 at night. If your Segment 2 school reads it differently, ask them before the first class.</p>
+    <h2>What counts as night in Michigan</h2>
+    <p>The official log defines nighttime hours as driving from 30 minutes after sunset to 30 minutes before sunrise. A drive that starts at sunset is not night practice for its first half hour.</p>
+    <h2>Who can supervise</h2>
+    <p>A licensed parent or guardian, or a licensed adult aged 21 or older whom the parent or guardian designates. <a href="{MI_NEW_DRIVERS}">The Secretary of State</a> says the designated adult must carry a signed letter of authorization from the parent or guardian. The supervisor sits in the front seat.</p>
+    <h2>A filled-in example: what counts as night</h2>
+    <p>Illustrative entries, not a completed log. Sunset in Detroit on these dates is about 6:50 p.m., so night starts about 7:20 p.m.</p>
+    <table><tr><th>Date</th><th>Time</th><th>Day hours</th><th>Night hours</th><th>Initials</th></tr>
+    <tr><td>Sat 17 Oct</td><td>1:00–2:30 pm</td><td>1.5</td><td>0</td><td>KM</td></tr>
+    <tr><td>Tue 20 Oct</td><td>6:20–7:50 pm</td><td>1</td><td>0.5</td><td>KM</td></tr>
+    <tr><td>Thu 22 Oct</td><td>7:30–8:30 pm</td><td>0</td><td>1</td><td>JM</td></tr></table>
+    <p>The Tuesday drive ends after dark, but only the half hour after about 7:20 p.m. counts as night.</p>
+    <h2>What an app should do for Michigan</h2><ul>
+    <li>Show progress toward both checkpoints: {seg['total']} with {seg['night']} at night, then {total} with {night} at night.</li>
+    <li>Keep night minutes separate, entered by the official 30-minute window.</li>
+    <li>Print a dated record with the supervisor for each drive. No app produces the state's form itself.</li></ul>
+    <p>Driving Log tracks both checkpoints for Michigan and links each rule to its source.</p>
+    <h2>Mistakes that hold up Segment 2 or the test</h2><ul>
+    <li>Arriving at Segment 2 with fewer than {seg['total']} logged hours or no night hours yet.</li>
+    <li>Counting the half hour right after sunset as night.</li>
+    <li>A grandparent or family friend supervising without the parent's signed letter.</li>
+    <li>Reaching {total} hours before the Level 1 license has been held for 6 months and booking the test too early.</li>
+    <li>A log with totals but no dates or initials; it is checked twice.</li></ul>"""
+    return practice_deep_shell(s, verified_on, "michigan-50-hour-log-segment-2",
+        "Michigan driving log: 30 hours for Segment 2, 50 for the road test",
+        f"Michigan's supervised driving log: {seg['total']} hours ({seg['night']} at night) before Segment 2, "
+        f"{total} hours ({night} at night) before the skills test, who supervises and what night means.",
+        answer, details, paperwork_checked="17 October 2026")
+
+
+VA_DMV_LEARNERS = "https://www.dmv.virginia.gov/licenses-ids/learners/apply"
+VA_CODE_335 = "https://law.lis.virginia.gov/vacode/title46.2/chapter3/section46.2-335/"
+VA_DMV_ED = "https://www.dmv.virginia.gov/licenses-ids/learners/ed-reqs"
+
+
+def virginia_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
+    total, night, months = s["total"], s["night"], s["permit_months"]
+    answer = (
+        f"Virginia teens need {total} hours of supervised driving, at least {night} of them after sunset, "
+        f"and must hold the learner's permit for {months} months (or until 18). A parent, foster parent or "
+        "legal guardian certifies the hours; the signed 45-hour log goes to the in-car driver education "
+        "instructor, not to DMV."
+    )
+    details = f"""<h2>Where the 45 hours are certified</h2>
+    <p>The Department of Education's 45-Hour Parent/Teen Driving Guide contains the log: date, skills, day and night minutes, and the parent's initials, with a certification block at the end that the parent signs with their DMV driver's license or ID number. The completed log goes to the in-car instructor and must be finished before the 180-day temporary license is issued.</p>
+    <p>The parent also signs the driver education completion certificate (DTS B or TDL-180), which certifies the same {total} hours. <a href="{VA_DMV_LEARNERS}">DMV</a> accepts that certificate only from the driver training school, never directly from families. Neither document mentions a notary.</p>
+    <h2>Who can supervise</h2>
+    <p>Under <a href="{VA_CODE_335}">Code of Virginia § 46.2-335</a>: any licensed driver aged 21 or older, a parent or legal guardian, or a brother or sister (including half- and step-siblings) aged 18 or older. The supervisor sits beside the driver and must be alert and able to help. The person who supervises a drive does not have to be the parent who signs the certification.</p>
+    <h2>Driver education alongside the log</h2>
+    <p>The <a href="{VA_DMV_ED}">state program</a> has 36 classroom sessions, seven driving sessions, seven observation sessions and a final road skills test, each session 50 minutes. It includes a 90-minute parent and teen component; in Northern Virginia (Planning District 8) a parent must attend it in person. The license is issued at 16 years and 3 months at the earliest.</p>
+    <h2>A filled-in example: after sunset means after sunset</h2>
+    <p>Virginia counts night as after sunset, with no extra buffer. Illustrative entries, not a completed log; sunset is around 6:30 p.m.</p>
+    <table><tr><th>Date</th><th>Time</th><th>Day min</th><th>Night min</th><th>Running total</th></tr>
+    <tr><td>Sat 10 Oct</td><td>10:00–11:00 am</td><td>60</td><td>0</td><td>1 h</td></tr>
+    <tr><td>Tue 13 Oct</td><td>6:00–7:00 pm</td><td>30</td><td>30</td><td>2 h</td></tr>
+    <tr><td>Thu 15 Oct</td><td>7:00–7:45 pm</td><td>0</td><td>45</td><td>2 h 45 min</td></tr></table>
+    <h2>What an app should do for Virginia</h2><ul>
+    <li>Keep after-sunset minutes separate and show how many of the {night} remain.</li>
+    <li>Count the {months}-month permit period from the permit date.</li>
+    <li>Print a dated record that matches the guide's log, so copying it in takes minutes. No app produces the official log or certificate.</li></ul>
+    <p>Driving Log does these for Virginia and links each rule to its source.</p>
+    <h2>Mistakes that hold up the temporary license</h2><ul>
+    <li>Not finishing the log before the in-car instructor needs it for the 180-day temporary license.</li>
+    <li>Reaching {total} hours with fewer than {night} after sunset.</li>
+    <li>Leaving the parent's DMV license or ID number off the certification.</li>
+    <li>Mailing the completion certificate to DMV yourself; only the school can submit it.</li>
+    <li>Assuming the January 2027 changes apply to teens. DMV says the rules for applicants under 18 stay the same; the changes cover ages 18 to 20.</li></ul>"""
+    return practice_deep_shell(s, verified_on, "virginia-45-hour-log-parent-certification",
+        "Virginia 45-hour driving log: 15 after sunset and who signs",
+        f"Virginia's {total}-hour log explained: {night} hours after sunset, the {months}-month permit, who can "
+        "supervise, and why the signed log goes to the in-car instructor, not DMV.",
+        answer, details, paperwork_checked="17 October 2026")
+
+
+OH_BMV_5791 = "https://dam.assets.ohio.gov/image/upload/publicsafety.ohio.gov/bmv5791.pdf"
+OH_DIGEST = (
+    "https://publicsafety.ohio.gov/who-we-are/resources/digest-of-motor-vehicle-laws/"
+    "section-1-how-to-get-your-driver-license"
+)
+OH_UNDER_21 = (
+    "https://otso.ohio.gov/programs/ohio-driver-training/for-drivers/under-21-driver-training/"
+    "under-21-driver-training"
+)
+
+
+def ohio_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
+    total, night, months = s["total"], s["night"], s["permit_months"]
+    answer = (
+        f"Ohio teens need {total} hours of supervised driving, at least {night} of them at night, and must "
+        f"hold the temporary permit (TIPIC) for {months} months. The hours are recorded on the BMV 5791 "
+        "Fifty Hour Affidavit, which a parent or guardian signs in front of a notary."
+    )
+    details = f"""<h2>The affidavit is the log</h2>
+    <p>Form <a href="{OH_BMV_5791}">BMV 5791 Fifty Hour Affidavit</a> (revision 9/25) has two parts: a supervised driving log, split into 40 daytime and {night} nighttime hours, and an affidavit that an eligible adult signs before a notary public. The eligible adult is the parent, guardian or custodian, or a person over 21 acting in loco parentis.</p>
+    <p>The form names two ways to document the hours: fill in its own log page, or use the RoadReady Ohio app. If you keep the log in another app, copy the dated entries onto the form's log page before you see the notary. Bring the notarized form to the driving skills test and to the Deputy Registrar when you buy the license; Deputy Registrar agencies have notaries.</p>
+    <h2>What counts as night in Ohio</h2>
+    <p>BMV 5791 defines nighttime as starting half an hour after sunset and ending half an hour before sunrise. The first 30 minutes after sunset are daytime on the form.</p>
+    <h2>Who can supervise</h2>
+    <p>According to the <a href="{OH_DIGEST}">Digest of Ohio Motor Vehicle Laws</a>, a 16- or 17-year-old permit holder may practise with any licensed driver aged 21 or older, except from midnight to 6 a.m., when the supervisor must be a parent, guardian or custodian with a valid license. Under 16, the supervisor must be a parent, guardian, custodian, licensed driving instructor or a person 21 or older acting in loco parentis, in the front passenger seat.</p>
+    <h2>Driver education, and ages 18 to 20</h2>
+    <p>Teens under 18 also complete 24 hours of classroom or online instruction and 8 hours of driving with a licensed instructor. Since 30 September 2025, <a href="{OH_UNDER_21}">Ohioans aged 18, 19 and 20</a> need the same {total} hours, {night} at night, with a licensed driver 21 or older, plus a Class D driver training course; they do not have to hold the permit for {months} months.</p>
+    <h2>A filled-in example: the half-hour rule</h2>
+    <p>Illustrative entries, not a completed log. Sunset in Columbus on these dates is about 6:55 p.m., so night starts about 7:25 p.m.</p>
+    <table><tr><th>Date</th><th>Time</th><th>Day</th><th>Night</th><th>Supervisor</th></tr>
+    <tr><td>Sat 17 Oct</td><td>2:00–3:00 pm</td><td>1 h</td><td>0</td><td>Parent</td></tr>
+    <tr><td>Tue 20 Oct</td><td>6:55–7:55 pm</td><td>30 min</td><td>30 min</td><td>Parent</td></tr>
+    <tr><td>Thu 22 Oct</td><td>7:30–8:15 pm</td><td>0</td><td>45 min</td><td>Aunt, 34</td></tr></table>
+    <h2>What an app should do for Ohio</h2><ul>
+    <li>Keep night minutes separate, entered by the form's half-hour window, and show how many of the {night} remain.</li>
+    <li>Count {months} months from the permit date for teens under 18.</li>
+    <li>Print a dated record that is quick to copy onto the BMV 5791 log page. No app produces the notarized affidavit.</li></ul>
+    <p>Driving Log tracks the {total} and {night} hours for Ohio and prints that dated record.</p>
+    <h2>Mistakes that get the affidavit sent back</h2><ul>
+    <li>Signing the affidavit at home; the eligible adult signs it in front of the notary.</li>
+    <li>Counting the first half hour after sunset as night.</li>
+    <li>A midnight drive supervised by someone other than a parent, guardian or custodian.</li>
+    <li>Bringing only an app printout instead of the BMV 5791 with its log page filled in.</li>
+    <li>An 18-, 19- or 20-year-old assuming the {total} hours no longer apply to them. Since September 2025 they do.</li></ul>"""
+    return practice_deep_shell(s, verified_on, "ohio-50-hour-affidavit-bmv-5791",
+        "Ohio 50-hour affidavit (BMV 5791): log, notary and night hours",
+        f"Ohio's {total}-hour driving log explained: {night} night hours, the notarized BMV 5791 affidavit, who "
+        "can supervise, and the rule for ages 18 to 20 since September 2025.",
+        answer, details, paperwork_checked="17 October 2026")
+
+
 def log_sheet_page(code: str, s: dict, verified_on: str) -> tuple[str, str, str]:
     """A blank, printable driving log for one state.
 
@@ -1641,10 +1841,55 @@ def log_sheet_page(code: str, s: dict, verified_on: str) -> tuple[str, str, str]
     <div>Supervising adult signature</div><div>Date</div>
     <div>Learner signature</div><div>Date</div>
   </div>
+{sheet_state_notes(code, s)}
 {inline_cta(name, f"sheet-{code.lower()}", "Skip the pen: the app keeps this log for you")}
   <p class="state-nav no-print"><a href="/guides/{guide}.html">← {esc(name)} guide</a><a href="/guides/">All state guides →</a></p>
   </main>"""
     return slug, page_shell(title, description, canonical, body, STATE_DISCLAIMER), title
+
+
+def sheet_state_notes(code: str, s: dict) -> str:
+    """Screen-only notes that make each sheet specific to its state.
+
+    Search Console (Oct 2026) left 49 of 51 sheets uncrawled: apart from the numbers they were
+    the same page. These are the state's own rules that change how the sheet is filled in; they
+    are hidden in print so the sheet still fits on one page.
+    """
+    def sentence(text: str) -> str:
+        text = str(text).strip()
+        return text if text.endswith((".", "!", "?")) else text + "."
+
+    notes = []
+    if holding_period(s):
+        anchor = holding_anchor(s)
+        notes.append(f"Hold the permit for at least {holding_period(s)}, counted from the "
+                     f"{anchor[0].lower() + anchor[1:]}.")
+    if s.get("supervisor_note"):
+        notes.append(f"Who can supervise: {sentence(s['supervisor_note'])}")
+    elif s.get("supervisor_min_age"):
+        who = f"a licensed driver aged {s['supervisor_min_age']} or older"
+        if s.get("supervisor_min_license_years"):
+            who += f", licensed for at least {s['supervisor_min_license_years']} years"
+        notes.append(f"Who can supervise: {who}.")
+    if s.get("signer_note"):
+        notes.append(sentence(s["signer_note"]))
+    if s.get("permit_curfew"):
+        notes.append(sentence(s["permit_curfew"]))
+    if s.get("required_fields"):
+        notes.append(f"The state form asks for: {', '.join(s['required_fields'])}.")
+    if s.get("digital_accepted"):
+        notes.append("A digital or printed copy of the log is accepted.")
+    for requirement in (s.get("extra_requirements") or [])[:2]:
+        notes.append(sentence(requirement))
+    if not notes:
+        return ""
+    items = "".join(f"<li>{esc(note)}</li>" for note in notes)
+    guide = detailed_guide_link(code)
+    guide_line = f"  <p>Step-by-step guide with a filled-in example:</p>\n  {guide}" if guide else ""
+    return f"""  <section class="no-print">
+  <h2>{esc(s['name'])} rules to know before you print</h2>
+  <ul>{items}</ul>
+{guide_line}  </section>"""
 
 
 def content_pages(states: dict, verified_on: str) -> list[tuple[str, str, str]]:
@@ -1657,6 +1902,10 @@ def content_pages(states: dict, verified_on: str) -> list[tuple[str, str, str]]:
         illinois_deep_page(states["IL"], verified_on),
         pennsylvania_deep_page(states["PA"], verified_on),
         georgia_deep_page(states["GA"], verified_on),
+        new_york_deep_page(states["NY"], verified_on),
+        ohio_deep_page(states["OH"], verified_on),
+        michigan_deep_page(states["MI"], verified_on),
+        virginia_deep_page(states["VA"], verified_on),
     ]
 
 

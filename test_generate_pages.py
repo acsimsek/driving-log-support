@@ -186,6 +186,15 @@ class GuideGeneratorTests(unittest.TestCase):
         self.assertIn("won't promise one-click migration", page)
         self.assertNotIn("$4.99", page)
 
+    def test_every_page_offers_the_safari_app_banner(self):
+        tag = '<meta name="apple-itunes-app" content="app-id=6797597475">'
+        for filename in ("index.html", "support.html", "privacy.html"):
+            self.assertIn(tag, (pages.REPO / filename).read_text(), filename)
+        _, page, _ = pages.state_page("TX", self.states["TX"], self.verified_on, self.states)
+        self.assertIn(tag, page)
+        _, sheet, _ = pages.log_sheet_page("TX", self.states["TX"], self.verified_on)
+        self.assertIn(tag, sheet)
+
     def test_waitlist_mailto_is_url_encoded(self):
         block = pages.cta_block(None, "compare-roadready")
         self.assertIn("mailto:support@acsimsek.com?", block)

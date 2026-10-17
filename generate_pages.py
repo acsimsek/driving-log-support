@@ -25,7 +25,8 @@ REPO = pathlib.Path(__file__).resolve().parent
 STATES_JSON = REPO.parent / "driving-log-ios" / "states.json"
 OUT_DIR = REPO / "guides"
 BASE_URL = "https://drivinglog.acsimsek.com"
-APP_STORE_BASE_URL = "https://apps.apple.com/app/apple-store/id6797597475"
+APP_STORE_ID = "6797597475"
+APP_STORE_BASE_URL = f"https://apps.apple.com/app/apple-store/id{APP_STORE_ID}"
 APP_STORE_PROVIDER_TOKEN = "129248493"
 SUPPORT_EMAIL = "support@acsimsek.com"
 FRESHNESS_LIMIT_DAYS = 90
@@ -670,6 +671,9 @@ def page_shell(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Safari on iPhone shows its App Store banner; families reading a guide on the phone they
+       will log drives on can open the app page without scrolling to a button. -->
+  <meta name="apple-itunes-app" content="app-id={APP_STORE_ID}">
   <title>{esc(title)}</title>
   <meta name="description" content="{esc(description)}">
   <meta name="robots" content="index,follow">

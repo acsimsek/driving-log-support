@@ -291,7 +291,10 @@ class GuideGeneratorTests(unittest.TestCase):
         self.assertIn("learner&#x27;s license: 50 hours, 10 at night", florida)
         _, pennsylvania, _ = pages.log_sheet_page("PA", self.states["PA"], self.verified_on)
         self.assertIn("At least 5 hours in inclement weather", pennsylvania)
-        # Georgia DDS takes a parent's oath at the application; there is no notary step.
+        # Georgia DDS takes a parent's oath at the application; there is no notary step. The
+        # model comes from the app's rule data, so the site and the app say the same thing.
+        georgia_rule = next(state for state in self.raw["states"] if state["code"] == "GA")
+        self.assertEqual(georgia_rule["signature"], "sworn_at_application")
         _, georgia_sheet, _ = pages.log_sheet_page("GA", self.states["GA"], self.verified_on)
         _, georgia_guide, _ = pages.state_page("GA", self.states["GA"], self.verified_on, self.states)
         for page in (georgia_sheet, georgia_guide):

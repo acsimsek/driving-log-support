@@ -71,11 +71,6 @@ STAGE_TARGET_FIELDS = {"total", "night", "holding_months", "no_hour_target"}
 
 CATEGORY_FIELDS = {"name", "hours"}
 
-# The app's rule data files Georgia under "notarized", but Georgia DDS describes no notary: a
-# parent or guardian attends the Class D application and swears or affirms to the hours there,
-# and no log is required (DDS Joshua's Law page and teen FAQ, checked 17 October 2026).
-SITE_SIGNATURE_OVERRIDES = {"GA": "sworn_at_application"}
-
 EXPECTED_JURISDICTIONS = {
     "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL",
     "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT",
@@ -297,8 +292,6 @@ def load_states(
                 for category in categories
                 if isinstance(category, dict)
             ]
-        if code in SITE_SIGNATURE_OVERRIDES:
-            published["signature"] = SITE_SIGNATURE_OVERRIDES[code]
         for source_key in ("source", "secondary_source"):
             source = published.get(source_key)
             if source is not None and not source.startswith("https://"):

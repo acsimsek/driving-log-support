@@ -71,6 +71,11 @@ STAGE_TARGET_FIELDS = {"total", "night", "holding_months", "no_hour_target"}
 
 CATEGORY_FIELDS = {"name", "hours"}
 
+# The app's rule data files Georgia under "notarized", but Georgia DDS describes no notary: a
+# parent or guardian attends the Class D application and swears or affirms to the hours there,
+# and no log is required (DDS Joshua's Law page and teen FAQ, checked 17 October 2026).
+SITE_SIGNATURE_OVERRIDES = {"GA": "sworn_at_application"}
+
 EXPECTED_JURISDICTIONS = {
     "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL",
     "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT",
@@ -292,6 +297,8 @@ def load_states(
                 for category in categories
                 if isinstance(category, dict)
             ]
+        if code in SITE_SIGNATURE_OVERRIDES:
+            published["signature"] = SITE_SIGNATURE_OVERRIDES[code]
         for source_key in ("source", "secondary_source"):
             source = published.get(source_key)
             if source is not None and not source.startswith("https://"):
@@ -453,6 +460,7 @@ def requirement_rows(s: dict) -> str:
             "single_certification": "one final certification",
             "per_entry": "a signature on each entry",
             "notarized": "a notarized certification",
+            "sworn_at_application": "a parent's sworn statement when applying",
         }.get(s["signature"], humanize(s["signature"]))
         rows.append(("Proof/signature model", signature))
     return "\n".join(
@@ -820,6 +828,9 @@ def faq_entries(s: dict) -> list[tuple[str, str]]:
         accepted = f"{name} names {esc(s['output'])}."
         if s.get("signature") == "notarized":
             accepted += " The certification is sworn before a notary or a license examiner."
+        elif s.get("signature") == "sworn_at_application":
+            accepted += (" A parent or guardian attends the application and swears or affirms to the"
+                         " hours; no driving log is required.")
         elif s.get("signature") == "per_entry":
             accepted += " Every entry needs the supervising adult's signature."
         if s.get("digital_accepted"):
@@ -939,6 +950,7 @@ def detailed_guide_link(code: str) -> str:
         "TX": ("texas-30-hour-log-what-counts", "Texas 30-hour log: what counts toward the total"),
         "FL": ("florida-50-hour-log-notarized-certification", "Florida 50-hour log and notarized certification"),
         "PA": ("pennsylvania-65-hour-log-dl-180c-certification", "Pennsylvania: the 65-hour log and DL-180C"),
+        "GA": ("georgia-40-hour-driving-log-joshuas-law", "Georgia: the 40 hours and the parent's oath"),
     }
     if code not in guides:
         return ""
@@ -1483,6 +1495,56 @@ def pennsylvania_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
         answer, details, paperwork_checked="17 October 2026")
 
 
+GA_JOSHUAS_LAW = "https://dds.georgia.gov/joshuas-law-requirements"
+GA_TEEN_FAQ = "https://dds.georgia.gov/teen-driving-laws-faqs"
+
+
+def georgia_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
+    total, night = s["total"], s["night"]
+    answer = (
+        f"Georgia teens need {total} hours of supervised driving, {night} of them at night, and must hold "
+        "the learner's permit for 1 year and 1 day. DDS does not require a driving log. Instead, a parent "
+        "or guardian comes to the Class D application and swears or affirms, under penalty of law, that "
+        "the hours were completed."
+    )
+    details = f"""<h2>No log required, but the oath is real</h2>
+    <p>Georgia DDS says plainly that <a href="{GA_JOSHUAS_LAW}">a driving log is not required</a> for supervised driving. What it does require is the parent or guardian at the counter: according to the <a href="{GA_TEEN_FAQ}">DDS teen driving FAQ</a>, a parent, guardian or DDS-certified driver education instructor swears or affirms under penalty of law that the applicant received the {total} hours, {night} at night.</p>
+    <p>That is a sworn number with nothing behind it unless you keep a record. A dated log is what lets a parent sign with confidence, and the only way to show that {night} of the hours really were at night.</p>
+    <h2>Joshua's Law: four ways to finish driver education</h2>
+    <p>Joshua's Law also requires an approved driver education course. DDS lists four methods; finish every item in the one you choose.</p>
+    <table><tr><th>Method</th><th>Instruction</th><th>Behind the wheel</th></tr>
+    <tr><td>1</td><td>30 h classroom</td><td>6 h with a certified school, plus {total} h supervised with a parent or guardian ({night} at night)</td></tr>
+    <tr><td>2</td><td>30 h classroom</td><td>40 h parent-taught with the DDS Parent/Teen Driving Guide, which includes the {total} supervised hours</td></tr>
+    <tr><td>3</td><td>30 h online</td><td>Same as Method 1</td></tr>
+    <tr><td>4</td><td>30 h online</td><td>Same as Method 2</td></tr></table>
+    <p>Since 1 July 2021, 17-year-olds applying for a Class D meet the same requirements as 16-year-olds. Check the <a href="{GA_JOSHUAS_LAW}">DDS Joshua's Law page</a> for the current list of approved schools and online programs.</p>
+    <h2>Who can supervise</h2>
+    <p>Someone at least 21 years old with an unexpired Class C license, sitting next to the learner and able to take control of the vehicle if needed.</p>
+    <h2>A filled-in example: a record you can swear to</h2>
+    <p>Illustrative entries, not a completed log. Mark night by the actual conditions, not only by the clock.</p>
+    <table><tr><th>Date</th><th>Time</th><th>Driven</th><th>Day / night</th><th>Running total</th></tr>
+    <tr><td>Sat 7 Mar</td><td>9:30–10:30 am</td><td>1 h</td><td>day</td><td>1 h</td></tr>
+    <tr><td>Wed 11 Mar</td><td>7:45–8:30 pm</td><td>45 min</td><td>night</td><td>1 h 45 min (45 min night)</td></tr>
+    <tr><td>Sun 15 Mar</td><td>2:00–3:30 pm</td><td>1 h 30 min</td><td>day</td><td>3 h 15 min</td></tr>
+    <tr><td>Thu 19 Mar</td><td>8:00–8:50 pm</td><td>50 min</td><td>night</td><td>4 h 5 min (1 h 35 min night)</td></tr></table>
+    <h2>What an app should do for Georgia</h2><ul>
+    <li>Keep night minutes separate and show how many of the {night} remain.</li>
+    <li>Count 1 year and 1 day from the permit date, not just 12 months.</li>
+    <li>Print a dated record to bring to DDS. DDS does not ask for it; it backs up the parent's statement. No app produces an official Georgia form.</li></ul>
+    <p>Driving Log does these for Georgia and links each rule to its source.</p>
+    <h2>Mistakes that make the oath hard to give</h2><ul>
+    <li>Estimating {total} hours at the counter instead of adding up dated drives.</li>
+    <li>Reaching {total} hours with fewer than {night} at night.</li>
+    <li>Applying for the Class D a day early: the permit must be held 1 year <em>and</em> 1 day.</li>
+    <li>Arriving without the parent or guardian, who must be present to attest.</li>
+    <li>Assuming the 6 instructor hours in Method 1 replace the {total} supervised hours. They are separate items.</li></ul>"""
+    return practice_deep_shell(s, verified_on, "georgia-40-hour-driving-log-joshuas-law",
+        "Georgia 40-hour driving log: do you need one under Joshua's Law?",
+        f"Georgia requires {total} supervised hours, {night} at night, and a permit held 1 year and 1 day. "
+        "No log is required, but a parent swears to the hours at DDS.",
+        answer, details, paperwork_checked="17 October 2026")
+
+
 def log_sheet_page(code: str, s: dict, verified_on: str) -> tuple[str, str, str]:
     """A blank, printable driving log for one state.
 
@@ -1541,6 +1603,8 @@ def log_sheet_page(code: str, s: dict, verified_on: str) -> tuple[str, str, str]
         rules.append("The supervising adult signs each entry: use the initials column and sign the certification.")
     elif s.get("signature") == "notarized":
         rules.append("The state certification is sworn before a notary or examiner; this sheet is your supporting record.")
+    elif s.get("signature") == "sworn_at_application":
+        rules.append("No log is required, but a parent swears to the hours when applying; this sheet is the record behind that statement.")
     rules_html = "".join(f"<li>{rule}</li>" for rule in rules)
     rules_block = f"<ul class=\"sheet-rules\">{rules_html}</ul>" if rules else ""
 
@@ -1599,6 +1663,7 @@ def content_pages(states: dict, verified_on: str) -> list[tuple[str, str, str]]:
         north_carolina_deep_page(states["NC"], verified_on),
         illinois_deep_page(states["IL"], verified_on),
         pennsylvania_deep_page(states["PA"], verified_on),
+        georgia_deep_page(states["GA"], verified_on),
     ]
 
 

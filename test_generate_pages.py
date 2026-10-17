@@ -318,6 +318,16 @@ class GuideGeneratorTests(unittest.TestCase):
         self.assertIn('href="/guides/florida-driving-log-sheet.html"', guide)
         self.assertIn("@media print", (pages.REPO / "site.css").read_text())
 
+    def test_michigan_cites_the_current_official_log_from_the_rule_data(self):
+        # The 01gwizdz log URL returned 404 on 17 October 2026. The rule data now cites the
+        # Rev. 08/2019 log itself, so no page needs an override or may link the retired address.
+        self.assertEqual(self.states["MI"]["source"], pages.MI_LOG)
+        _, deep, _ = pages.michigan_deep_page(self.states["MI"], self.verified_on)
+        state = pages.state_page("MI", self.states["MI"], self.verified_on, self.states)[1]
+        for page in (deep, state):
+            self.assertNotIn("01gwizdz", page)
+            self.assertIn(pages.MI_LOG, page)
+
     def test_deep_guides_show_the_app_before_the_fold_and_a_worked_example(self):
         for code, builder in (("TX", pages.texas_deep_page), ("FL", pages.florida_deep_page),
                               ("CA", pages.california_deep_page), ("NC", pages.north_carolina_deep_page),

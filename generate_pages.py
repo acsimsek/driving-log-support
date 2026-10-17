@@ -1597,9 +1597,6 @@ MI_NEW_DRIVERS = "https://www.michigan.gov/sos/license-id/new-drivers-under-18"
 
 
 def michigan_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
-    # states.json still links the retired 01gwizdz log URL, which now returns 404; link the
-    # current official log until the rule data is updated (task filed 17 October 2026).
-    s = {**s, "source": MI_LOG}
     total, night = s["total"], s["night"]
     seg = s["milestone"]["before_segment_2"]
     answer = (

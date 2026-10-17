@@ -181,6 +181,11 @@ p { margin: 0 0 1em; }
 .prose th, .prose td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .prose tr:last-child th, .prose tr:last-child td { border-bottom: 0; }
 .prose th[scope=row] { width: 42%; font-weight: 600; background: #fbfdfd; }
+/* Worked-example tables have five columns; on a phone they must not widen the page. */
+@media screen and (max-width: 560px) {
+  .prose table { display: block; overflow-x: auto; font-size: .9rem; }
+  .prose th, .prose td { padding: 8px 9px; }
+}
 .callout { background: var(--teal-soft); border-radius: 14px; padding: 16px 18px; }
 .callout.warn { background: #fdf3e7; color: #6b3d0f; }
 .sources { font-size: .95rem; color: var(--muted); background: var(--card); border: 1px dashed var(--line); border-radius: 14px; padding: 14px 16px; }

@@ -938,6 +938,7 @@ def detailed_guide_link(code: str) -> str:
         "IL": ("illinois-50-hour-log-and-parent-affidavit", "Illinois: the practice log and parent affidavit"),
         "TX": ("texas-30-hour-log-what-counts", "Texas 30-hour log: what counts toward the total"),
         "FL": ("florida-50-hour-log-notarized-certification", "Florida 50-hour log and notarized certification"),
+        "PA": ("pennsylvania-65-hour-log-dl-180c-certification", "Pennsylvania: the 65-hour log and DL-180C"),
     }
     if code not in guides:
         return ""
@@ -1344,12 +1345,13 @@ def florida_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
 
 
 def practice_deep_shell(s: dict, verified_on: str, slug: str, title: str,
-                        description: str, answer: str, details: str) -> tuple[str, str, str]:
+                        description: str, answer: str, details: str,
+                        paperwork_checked: str = "27 September 2026") -> tuple[str, str, str]:
     name, code = s["name"], s["code"].lower()
     state_slug = slug_for(s["code"], s["name"])
     body = f"""<section class="guide-hero"><div class="wrap narrow">
       <p class="crumbs"><a href="/">Driving Log</a> › <a href="/guides/">State guides</a> › {esc(name)} practice log</p>
-      <h1>{esc(title)}</h1><p class="lede">For the teen learner-permit path. Rule data verified {esc(verified_on)}; linked paperwork checked 27 September 2026.</p>
+      <h1>{esc(title)}</h1><p class="lede">For the teen learner-permit path. Rule data verified {esc(verified_on)}; linked paperwork checked {esc(paperwork_checked)}.</p>
       <div class="stats">{stat_cards(s)}</div></div></section>
     <main class="wrap narrow prose"><div class="callout">{answer}</div>
 {inline_cta(name, f"guide-{code}-deep", f"Track your {name} hours free on iPhone")}
@@ -1396,14 +1398,21 @@ def north_carolina_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
     <tr><td>2</td><td>8 h</td><td>8 h</td><td>{cap + 8} h</td></tr>
     <tr><td>3</td><td>{cap + 1} h</td><td>{cap} h</td><td>{cap * 2 + 8} h</td></tr></table>
     <p>The example is not a full log: retain individual dates, times, night entries and signatures in DL-4A. Check the official form when assigning entries to weeks.</p>
+    <h2>Do you need another log for Level 3?</h2>
+    <p>No. The separate 12-hour Level 2 log (DL-4B) ended when G.S. 20-11(f)(4) was repealed, effective 30 September 2025. <a href="https://www.ncdot.gov/dmv/license-id/driver-licenses/new-drivers/Pages/level3.aspx">NCDMV's Level 3 page</a> lists what remains: hold the Level 2 license for at least six months, with no moving-violation, seat-belt or mobile-phone convictions in the last six months. The DL-4A log above is the only practice log in the process.</p>
     <h2>Mistakes that overstate progress</h2><ul>
     <li>Counting all hours in a week that exceeds {cap} hours.</li>
     <li>Finishing total time but missing the separate {s['night']}-hour night target.</li>
     <li>Scheduling a Level 2 application before the {s['permit_months']}-month holding period ends.</li>
     <li>Presenting unsigned entries or treating this supporting sheet as the state's form.</li></ul>"""
+    # Search Console (Oct 2026): ~280 impressions at position ~9 and no clicks. Searchers type
+    # "nc dmv driving log", "nc permit hours log" and "60 hour driving log filled out nc", so the
+    # title leads with the form and the example rather than the weekly cap.
     return practice_deep_shell(s, verified_on, "north-carolina-60-hour-log-weekly-cap",
-        "North Carolina 60-hour log: the weekly cap explained",
-        "North Carolina's 60-hour driving log: 10 night hours, a 10-hour weekly cap, the nine-month permit period and a worked planning example.", answer, details)
+        "NC 60-hour driving log (DL-4A): rules and a filled-in example",
+        f"How to fill in North Carolina's DL-4A driving log: {total} hours, {s['night']} at night, "
+        f"at most {cap} a week, the {s['permit_months']}-month permit, a filled-in example and the Level 3 answer.",
+        answer, details)
 
 
 def illinois_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
@@ -1428,6 +1437,52 @@ def illinois_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
         "Illinois practice hours explained: 50 total, 10 at night, a nine-month permit, the practice log, parent certification and consent affidavit.", answer, details)
 
 
+PA_PARENT_GUIDE = (
+    "https://www.pa.gov/content/dam/copapwp-pagov/en/penndot/documents/public/dvspubsforms/"
+    "bdl/bdl-publications/pub%20385a.pdf"
+)
+
+
+def pennsylvania_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
+    total, night, months = s["total"], s["night"], s["permit_months"]
+    weather = next(c["hours"] for c in s["categories"] if c["name"] == "inclement_weather")
+    answer = (
+        f"Pennsylvania requires {total} hours of supervised practice, including {night} at night and "
+        f"{weather} in bad weather, and at least {months} months on the learner's permit before the road "
+        "test. A parent or guardian certifies the hours on form DL-180C."
+    )
+    details = f"""<h2>The log and the certification are different papers</h2>
+    <p>PennDOT's parent guide, <a href="{PA_PARENT_GUIDE}">The Parent's Supervised Driving Program (PUB 385A)</a>, includes a supervised driving log with columns for the date, day or night, weather, skills practised and driving time. Keep it, or an equally detailed record, as you go.</p>
+    <p>The certification is the <a href="{esc(s['source'])}">DL-180C Parent or Guardian Certification Form</a>. A parent, guardian, person in loco parentis or spouse aged 18 or older signs that the learner completed at least {total} hours, including {night} at night and {weather} in inclement weather, and has seen PennDOT's distracted-driving material. It is signed in front of a notary, a driver license examiner or one of the other officials listed on the form; a notarized signature is needed only when the parent or guardian is not going with the teen to the Driver License Center for the skills test.</p>
+    <h2>Who can supervise</h2>
+    <p>{esc(s['supervisor_note'])}. PennDOT's parent guide adds that the supervisor must be licensed for the same or a higher class of vehicle than the permit. The DL-180C's wording certifies practice given by licensed drivers aged 21 or older; if a supervising parent or spouse is younger, ask PennDOT how to certify those hours.</p>
+    <h2>A filled-in example: one log, three totals</h2>
+    <p>Illustrative entries, not a completed log. Every drive counts toward the {total}; the night and weather columns are what show the {night} and {weather}-hour minimums.</p>
+    <table><tr><th>Date</th><th>Time</th><th>Driven</th><th>Day / night</th><th>Weather</th></tr>
+    <tr><td>Sat 7 Mar</td><td>10:00–11:15 am</td><td>1 h 15 min</td><td>day</td><td>dry</td></tr>
+    <tr><td>Tue 10 Mar</td><td>7:30–8:15 pm</td><td>45 min</td><td>night</td><td>dry</td></tr>
+    <tr><td>Thu 19 Mar</td><td>4:00–5:00 pm</td><td>1 h</td><td>day</td><td>heavy rain</td></tr>
+    <tr><td>Sat 28 Mar</td><td>1:00–2:30 pm</td><td>1 h 30 min</td><td>day</td><td>dry</td></tr>
+    <tr><th>Totals</th><td></td><td><strong>4 h 30 min</strong></td><td><strong>45 min night</strong></td><td><strong>1 h bad weather</strong></td></tr></table>
+    <p>The DL-180C does not say whether one rainy drive after dark counts toward both minimums. Record day or night and the weather separately for every drive, so either total can be shown.</p>
+    <h2>What an app should do for Pennsylvania</h2><ul>
+    <li>Keep bad-weather minutes as their own total, not only day and night.</li>
+    <li>Show the {total}, {night} and {weather}-hour targets side by side.</li>
+    <li>Print a dated record to keep with the PUB 385A log. No app produces the DL-180C itself.</li></ul>
+    <p>Driving Log tracks all three totals for Pennsylvania and links each rule to its source.</p>
+    <h2>Mistakes that hold up the road test</h2><ul>
+    <li>Reaching {total} hours without {night} at night or {weather} in bad weather.</li>
+    <li>Writing the weather only into a final total; without dated entries the {weather} hours are hard to show.</li>
+    <li>Planning the road test without counting {months} months from the permit issue date.</li>
+    <li>A parent who cannot come to the skills test, and a DL-180C that was never notarized.</li>
+    <li>Treating an app printout as the DL-180C. The printout supports the certification; it does not replace it.</li></ul>"""
+    return practice_deep_shell(s, verified_on, "pennsylvania-65-hour-log-dl-180c-certification",
+        "Pennsylvania 65-hour driving log: DL-180C and bad-weather hours",
+        f"Pennsylvania's {total}-hour log explained: {night} night and {weather} bad-weather hours, the "
+        f"{months}-month permit, who signs the DL-180C and when it needs a notary.",
+        answer, details, paperwork_checked="17 October 2026")
+
+
 def log_sheet_page(code: str, s: dict, verified_on: str) -> tuple[str, str, str]:
     """A blank, printable driving log for one state.
 
@@ -1442,6 +1497,14 @@ def log_sheet_page(code: str, s: dict, verified_on: str) -> tuple[str, str, str]
         f"Free printable {name} driving log sheet: dated entries, day and night minutes and a "
         "supervising-adult signature block. Print it or save it as a PDF."
     )
+    if code == "FL":
+        # Search Console (Oct 2026): position ~7 but ~1% CTR. Florida searchers type "learner's
+        # license driving log", "50 hour driving log" and "how do i log my 50 hours of driving".
+        title = f"{name} {s['total']}-hour driving log sheet: free printable"
+        description = (
+            f"Free printable log for {name}'s learner's license: {s['total']} hours, {s['night']} at "
+            "night, dated day and night minutes and adult initials. Print it or save it as a PDF."
+        )
     canonical = f"{BASE_URL}/guides/{slug}.html"
     guide = slug_for(code, name)
 
@@ -1464,6 +1527,12 @@ def log_sheet_page(code: str, s: dict, verified_on: str) -> tuple[str, str, str]
         rules.append(f"Only {esc(s['weekly_cap'])} hours per week count toward the total.")
     if s.get("min_days"):
         rules.append(f"Practice on at least {esc(s['min_days'])} different days.")
+    for category in s.get("categories", []):
+        if category.get("name") and category.get("hours") is not None:
+            rules.append(
+                f"At least {esc(category['hours'])} hours in {esc(humanize(category['name']))}; "
+                "note it in the Road / weather column."
+            )
     if s.get("night_definition"):
         rules.append(f"Night means {esc(s['night_definition'])}.")
     if s.get("night_blackout_months"):
@@ -1529,6 +1598,7 @@ def content_pages(states: dict, verified_on: str) -> list[tuple[str, str, str]]:
         california_deep_page(states["CA"], verified_on),
         north_carolina_deep_page(states["NC"], verified_on),
         illinois_deep_page(states["IL"], verified_on),
+        pennsylvania_deep_page(states["PA"], verified_on),
     ]
 
 

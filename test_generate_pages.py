@@ -165,7 +165,11 @@ class GuideGeneratorTests(unittest.TestCase):
         self.assertIn("10 hours", hawaii)
         self.assertIn("age 21+", hawaii)
         self.assertIn("notarized", hawaii)
-        self.assertIn("https://hidot.hawaii.gov/highways/files/2013/01/HAR19-139.pdf", hawaii)
+        self.assertIn(
+            "https://hidot.hawaii.gov/highways/files/2026/09/HAR_19_139_Driver_Education_Program_Requirements_remediated.pdf",
+            hawaii,
+        )
+        self.assertNotIn("HAR19-139.pdf", hawaii)
         self.assertIn("40 daytime hours", hawaii)
         self.assertIn("HRS_0286-0110.htm", hawaii)
 

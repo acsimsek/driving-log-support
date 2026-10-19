@@ -29,6 +29,8 @@ APP_STORE_ID = "6797597475"
 APP_STORE_BASE_URL = f"https://apps.apple.com/app/apple-store/id{APP_STORE_ID}"
 APP_STORE_PROVIDER_TOKEN = "129248493"
 SUPPORT_EMAIL = "support@acsimsek.com"
+INSTAGRAM_URL = "https://www.instagram.com/drivinglogapp/"
+FACEBOOK_URL = "https://www.facebook.com/drivinglogapp"
 FRESHNESS_LIMIT_DAYS = 90
 # Cloudflare Web Analytics beacon token (25 September 2026 decision). Empty means no
 # script is emitted; when set, privacy.html must describe the measurement too — the test
@@ -710,6 +712,8 @@ def page_shell(
       <a href="/support.html">Support</a>
       <a href="/privacy.html">Privacy Policy</a>
       <a href="mailto:{SUPPORT_EMAIL}">{SUPPORT_EMAIL}</a>
+      <a href="{INSTAGRAM_URL}" rel="me">Instagram</a>
+      <a href="{FACEBOOK_URL}" rel="me">Facebook</a>
     </div>
   </footer>
 </body>

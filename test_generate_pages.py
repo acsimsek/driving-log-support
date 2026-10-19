@@ -199,6 +199,17 @@ class GuideGeneratorTests(unittest.TestCase):
         _, sheet, _ = pages.log_sheet_page("TX", self.states["TX"], self.verified_on)
         self.assertIn(tag, sheet)
 
+    def test_every_page_footer_links_the_social_profiles(self):
+        links = ('<a href="https://www.instagram.com/drivinglogapp/" rel="me">Instagram</a>',
+                 '<a href="https://www.facebook.com/drivinglogapp" rel="me">Facebook</a>')
+        _, page, _ = pages.state_page("TX", self.states["TX"], self.verified_on, self.states)
+        _, sheet, _ = pages.log_sheet_page("TX", self.states["TX"], self.verified_on)
+        texts = {f: (pages.REPO / f).read_text() for f in ("index.html", "support.html", "privacy.html")}
+        texts.update(state_page=page, log_sheet=sheet)
+        for name, text in texts.items():
+            for link in links:
+                self.assertIn(link, text, name)
+
     def test_waitlist_mailto_is_url_encoded(self):
         block = pages.cta_block(None, "compare-roadready")
         self.assertIn("mailto:support@acsimsek.com?", block)

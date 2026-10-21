@@ -1598,8 +1598,8 @@ def new_york_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
 
 
 MI_LOG = (
-    "https://www.michigan.gov/-/media/Project/Websites/sos/License-and-ID/New-drivers/"
-    "Michigan-Supervised-Driving-Log.pdf"
+    "https://www.michigan.gov/sos/-/media/Project/Websites/sos/License-and-ID/Drivers-under-18/"
+    "Supervised-Driving-Guide.pdf"
 )
 MI_NEW_DRIVERS = "https://www.michigan.gov/sos/license-id/new-drivers-under-18"
 
@@ -1617,7 +1617,7 @@ def michigan_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
     <table><tr><th>Checkpoint</th><th>Hours logged</th><th>Also required</th></tr>
     <tr><td>Before Segment 2</td><td>{seg['total']} hours, {seg['night']} at night</td><td>Level 1 license held 3 consecutive months; show the log to the Segment 2 instructor</td></tr>
     <tr><td>Before the driving skills test</td><td>{total} hours, {night} at night</td><td>Segment 2 completed, Level 1 held 6 months, no violations in the previous 90 days; show the signed log to the examiner</td></tr></table>
-    <p>The state's <a href="{MI_LOG}">Michigan Supervised Driving Log</a> (Rev. 08/2019) has columns for the date, lesson number, day hours, night hours, weather and the supervisor's initials. The Secretary of State says other log formats are accepted. At the skills test the parent or guardian also signs a certification on the score sheet.</p>
+    <p>The state's Michigan supervised driving log is printed inside the Department of State's <a href="{MI_LOG}">Supervised Driving Guide</a> (SOS-191, revised 5/2026; the log pages are still Rev. 08/2019). It has columns for the date, lesson number, day hours, night hours, weather, the supervisor's initials and notes. The guide says other driving log formats will be accepted. At the skills test the parent or guardian also signs a certification on the score sheet.</p>
     <p>One wrinkle: the form's Segment 2 block asks for "30 minimum" daytime hours and "2 minimum" nighttime hours, while the instructions and the statute say 30 hours <em>including</em> 2 at night. If your Segment 2 school reads it differently, ask them before the first class.</p>
     <h2>What counts as night in Michigan</h2>
     <p>The official log defines nighttime hours as driving from 30 minutes after sunset to 30 minutes before sunrise. A drive that starts at sunset is not night practice for its first half hour.</p>
@@ -1645,7 +1645,7 @@ def michigan_deep_page(s: dict, verified_on: str) -> tuple[str, str, str]:
         "Michigan driving log: 30 hours for Segment 2, 50 for the road test",
         f"Michigan's supervised driving log: {seg['total']} hours ({seg['night']} at night) before Segment 2, "
         f"{total} hours ({night} at night) before the skills test, who supervises and what night means.",
-        answer, details, paperwork_checked="17 October 2026")
+        answer, details, paperwork_checked="21 October 2026")
 
 
 VA_DMV_LEARNERS = "https://www.dmv.virginia.gov/licenses-ids/learners/apply"
